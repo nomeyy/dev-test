@@ -1,6 +1,7 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 import { db } from "@/lib/db";
 
@@ -33,6 +34,53 @@ declare module "next-auth" {
 export const nextAuthConfig = {
   providers: [
     DiscordProvider,
+    CredentialsProvider({
+      id: "credentials",
+      name: "Demo Login",
+      credentials: {
+        email: { label: "Email", type: "email", placeholder: "any@email.com" },
+        password: {
+          label: "Password",
+          type: "password",
+          placeholder: "any password",
+        },
+      },
+      async authorize(credentials) {
+        console.log("Credentials provider called with:", credentials);
+
+        // Accept any credentials for demo purposes
+        if (credentials?.email && credentials?.password) {
+          const email = credentials.email as string;
+          console.log("Creating/finding user with email:", email);
+
+          try {
+            // Create or find user in database
+            const user = await db.user.upsert({
+              where: { email },
+              update: {},
+              create: {
+                email,
+                name: email.split("@")[0] || "Demo User",
+                emailVerified: new Date(),
+              },
+            });
+
+            console.log("User created/found:", user);
+
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+            };
+          } catch (error) {
+            console.error("Error creating/finding user:", error);
+            return null;
+          }
+        }
+        console.log("No valid credentials provided");
+        return null;
+      },
+    }),
     /**
      * ...add more providers here.
      *
@@ -44,13 +92,27 @@ export const nextAuthConfig = {
      */
   ],
   adapter: PrismaAdapter(db),
-  callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+  session: {
+    strategy: "jwt",
   },
+  callbacks: {
+    session: ({ session, token }) => {
+      console.log("Session callback - session:", session, "token:", token);
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.sub,
+        },
+      };
+    },
+    jwt: ({ token, user }) => {
+      console.log("JWT callback - token:", token, "user:", user);
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+  },
+  debug: true,
 } satisfies NextAuthConfig;

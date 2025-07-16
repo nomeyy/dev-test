@@ -11,3 +11,6 @@ import {
 export const getSession = auth;
 export const signIn = nextAuthSignIn;
 export const signOut = nextAuthSignOut;
+
+// Export demo login action
+export { demoLogin } from "./demo-login";

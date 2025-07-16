@@ -1,6 +1,8 @@
 import Link from "next/link";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
+import { Button } from "@/shared/components/ui/button";
+import { demoLogin } from "@/features/auth";
 
 const LandingPage = () => (
   <>
@@ -14,12 +16,20 @@ const LandingPage = () => (
       <ServerComponent />
     </div>
 
-    <Link
-      href={"/api/auth/signin"}
-      className={`rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20`}
-    >
-      {"Sign in"}
-    </Link>
+    <div className="flex gap-4">
+      <Link
+        href={"/api/auth/signin"}
+        className={`rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20`}
+      >
+        {"Sign in"}
+      </Link>
+
+      <form action={demoLogin}>
+        <Button type="submit" className="rounded-full">
+          🚀 Quick Demo
+        </Button>
+      </form>
+    </div>
   </>
 );
 
