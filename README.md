@@ -1,4 +1,5 @@
 # Nomey Web App
+
 This is the official repository for the Nomey web app, built on the T3 Stack with custom extensions.
 
 ## Tech Stack
@@ -12,7 +13,7 @@ This is the official repository for the Nomey web app, built on the T3 Stack wit
 - [tolgee](https://tolgee.io/) - Translation Management
 - [Meilisearch](https://www.meilisearch.com/) - Full-text search
 - [Upstash](https://upstash.com/) Next compatible redis
-- [Qstash](https://upstash.com/docs/qstash) Next compatible queue handling 
+- [Qstash](https://upstash.com/docs/qstash) Next compatible queue handling
 - [Vitest](https://vitest.dev/) - Testing Framework
 
 ## Testing
@@ -42,6 +43,7 @@ npm run test
 ## Local Development
 
 ### Clone and Install
+
 ```bash
 git clone git@github.com:nomeyy/nomey-next.git
 cd nomey-next
@@ -58,11 +60,65 @@ You'll need to have `docker` installed locally. We advise running `./scripts/sta
 npm run dev
 ```
 
+## Server-Sent Events
+
+Real-time updates are handled through a tRPC subscription.
+
+```ts
+import { initSSE } from "@/lib/sse";
+
+initSSE();
+```
+
+This registers the demo module that periodically broadcasts mock events.
+
+Configure the tRPC client to use `httpSubscriptionLink`:
+
+```ts
+import { httpSubscriptionLink } from "@trpc/client";
+
+api.createClient({
+  links: [httpSubscriptionLink({ url: "/api/trpc" })],
+});
+
+const sub = api.sse.events.subscribe(undefined, {
+  onData(event) {
+    console.log("event:", event);
+  },
+});
+```
+
+Backend code or tRPC procedures can push updates to all connected clients using the helpers in `@/lib/sse`:
+
+```ts
+import { notifyAll, notifyMany } from "@/lib/sse";
+
+notifyAll("notification", { message: "Hello!" });
+
+notifyMany(["client-a", "client-b"], "notification", {
+  message: "To a few clients only",
+});
+
+// Customize how demo events target clients
+import { configureTargetSelector } from "@/lib/sse";
+configureTargetSelector((ids) => {
+  // Always broadcast
+  return ids;
+});
+
+// React to SSE connect/disconnect events
+import { registerModule } from "@/lib/sse";
+registerModule({
+  connect(id) {},
+  disconnect(id) {},
+});
+```
+
 > ⚠️ **Warning:** The T3 stack hard-enforces environment variables to provide type-safety. The project will not build without all environment variables in place. Contact a dev to get their variables to quickly get yourself up and running.
 
 ## Learn More
 
- - [Nomey Documentation (WIP)](https://nomey.mintlify.app/)
- - [Next Documentation](https://nextjs.org/docs)
- - [T3 Stack Documentation](https://create.t3.gg/en/usage/first-steps)
- - [Mux Documentation](https://www.mux.com/docs)
+- [Nomey Documentation (WIP)](https://nomey.mintlify.app/)
+- [Next Documentation](https://nextjs.org/docs)
+- [T3 Stack Documentation](https://create.t3.gg/en/usage/first-steps)
+- [Mux Documentation](https://www.mux.com/docs)
