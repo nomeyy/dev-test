@@ -3,7 +3,6 @@ import { SSEManager } from "@/lib/sse/SSEManager";
 
 // Extend globalThis to include __sseManager for type safety
 declare global {
-  // eslint-disable-next-line no-var
   var __sseManager: SSEManager | undefined;
 }
 
@@ -20,6 +19,12 @@ function generateClientId() {
 export async function GET(req: NextRequest) {
   // Create a unique id for this client
   const clientId = generateClientId();
+
+  // Heartbeat interval in milliseconds
+  const HEARTBEAT_INTERVAL = 20000; // 20 seconds
+
+  // Variable to hold the heartbeat interval id
+  let heartbeat: NodeJS.Timeout | undefined;
 
   // Create a ReadableStream to send SSE data
   const stream = new ReadableStream({
@@ -44,10 +49,17 @@ export async function GET(req: NextRequest) {
         JSON.stringify({ message: "connected", clientId }),
         "connected",
       );
+
+      // Start a heartbeat interval to keep the connection alive
+      heartbeat = setInterval(() => {
+        sendEvent(JSON.stringify({ ts: Date.now() }), "ping");
+      }, HEARTBEAT_INTERVAL);
     },
     cancel() {
       // Remove the client from the SSEManager when the connection is closed
       sseManager.removeClient(clientId);
+      // Cleanup the heartbeat interval
+      if (heartbeat) clearInterval(heartbeat);
     },
   });
 
