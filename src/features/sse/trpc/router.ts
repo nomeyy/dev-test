@@ -3,7 +3,9 @@ import { createTRPCRouter, publicProcedure } from "@/lib/trpc";
 import { logger } from "@/utils/logging";
 import { observable } from "@trpc/server/observable";
 import { sseService } from "@/lib/sse";
+
 import type { ClientSSEMessage } from "../models/SSEModel";
+import { broadcastMessage, sendUserNotification } from "../utils/sse-utils";
 
 const log = logger.createContextLogger("SSE-TRPC");
 
@@ -11,6 +13,17 @@ const log = logger.createContextLogger("SSE-TRPC");
  * Input schema for SSE connection
  */
 const SSEConnectionSchema = z.object({
+  userId: z.string().optional(),
+  sessionId: z.string().optional(),
+});
+
+/**
+ * Input schema for sending test messages
+ */
+const SendTestMessageSchema = z.object({
+  type: z.enum(["broadcast", "user"]),
+  event: z.string().min(1, "Event name is required"),
+  data: z.record(z.unknown()),
   userId: z.string().optional(),
   sessionId: z.string().optional(),
 });
@@ -103,5 +116,45 @@ export const sseRouter = createTRPCRouter({
           sseService.removeClient(clientId);
         };
       });
+    }),
+
+  /**
+   * Send a test message via SSE
+   */
+  sendTestMessage: publicProcedure
+    .input(SendTestMessageSchema)
+    .mutation(async ({ input }) => {
+      const { type, event, data, userId, sessionId } = input;
+
+      try {
+        switch (type) {
+          case "broadcast":
+            await broadcastMessage(event, data);
+            break;
+
+          case "user":
+            if (!userId) {
+              throw new Error("userId is required for user notifications");
+            }
+            await sendUserNotification(userId, event, data);
+            break;
+        }
+
+        log.info(`Test SSE message sent via tRPC`, {
+          type,
+          event,
+          userId,
+          sessionId,
+        });
+
+        return {
+          success: true,
+          message: `SSE message sent: ${type} - ${event}`,
+          timestamp: Date.now(),
+        };
+      } catch (error) {
+        log.error("Failed to send SSE test message via tRPC", error);
+        throw error;
+      }
     }),
 });

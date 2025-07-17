@@ -1,0 +1,32 @@
+{
+  "demo": {
+    "title": "Server-Sent Events Demo",
+    "description": "Diese Seite demonstriert Echtzeit-Kommunikation mit Server-Sent Events (SSE). Verbinden Sie sich mit dem SSE-Stream und testen Sie das Senden verschiedener Nachrichtentypen.",
+    "pageTitle": "SSE Demo"
+  },
+  "connection": {
+    "status": "Verbindungsstatus",
+    "connecting": "Verbinde...",
+    "connected": "Verbunden",
+    "disconnected": "Getrennt",
+    "error": "Fehler",
+    "messagesReceived": "Empfangene Nachrichten: {{count}}",
+    "errorMessage": "Fehler: {{message}}"
+  },
+  "controls": {
+    "connection": "Verbindungssteuerung",
+    "connect": "Verbinden",
+    "disconnect": "Trennen",
+    "testMessages": "Testnachrichten",
+    "sendBroadcast": "Broadcast senden",
+    "sendToUser": "An Benutzer senden",
+    "sending": "Sende...",
+    "userId": "Benutzer-ID: {{id}}"
+  },
+  "messages": {
+    "latest": "Letzte Nachricht",
+    "history": "Nachrichtenverlauf",
+    "event": "Ereignis: {{event}}",
+    "time": "Zeit: {{time}}"
+  }
+}
