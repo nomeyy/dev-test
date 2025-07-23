@@ -50,3 +50,9 @@ tolgee.config.yaml
 
 # editor directories
 .vscode
+
+
+# macOS metadata files
+._*
+.DS_Store
+*.pem
