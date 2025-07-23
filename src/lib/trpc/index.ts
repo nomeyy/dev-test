@@ -11,6 +11,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 import { db } from "@/lib/db";
 import { getSession } from "@/features/auth";
+import { sseManager, initSSE } from "@/lib/sse";
 /**
  * 1. CONTEXT
  *
@@ -24,10 +25,12 @@ import { getSession } from "@/features/auth";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  initSSE();
   const session = await getSession();
 
   return {
     db,
+    sse: sseManager,
     session,
     ...opts,
   };

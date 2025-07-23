@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
+import { SSEDemo } from "@/features/sse";
 
 const LandingPage = () => (
   <>
@@ -9,6 +10,7 @@ const LandingPage = () => (
     </h1>
 
     <div className="max-w-[600px] space-y-5 text-left">
+      <SSEDemo />
       <ClientComponent />
 
       <ServerComponent />
