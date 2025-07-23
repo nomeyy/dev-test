@@ -14,12 +14,21 @@ const LandingPage = () => (
       <ServerComponent />
     </div>
 
-    <Link
-      href={"/api/auth/signin"}
-      className={`rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20`}
-    >
-      {"Sign in"}
-    </Link>
+    <div className="flex flex-col gap-4 sm:flex-row">
+      <Link
+        href={"/api/auth/signin"}
+        className={`rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20`}
+      >
+        {"Sign in"}
+      </Link>
+
+      <Link
+        href={"/sse-test"}
+        className={`rounded-full border border-purple-500/50 bg-purple-600/20 px-10 py-3 font-semibold no-underline transition hover:bg-purple-600/30`}
+      >
+        {"Test SSE"}
+      </Link>
+    </div>
   </>
 );
 

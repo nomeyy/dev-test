@@ -7,6 +7,9 @@
 // Hook for accessing the current authentication session state throughout the application
 export { useSession } from "./hooks/useSession";
 
+// Hook for accessing session state in public/universal routes (can be null)
+export { useSession as usePublicSession } from "./hooks/usePublicSession";
+
 // Provider component that makes authentication session available to the component tree
 export { SessionProvider } from "./contexts/SessionContext";
 
