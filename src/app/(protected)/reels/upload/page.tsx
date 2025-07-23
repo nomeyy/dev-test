@@ -7,7 +7,7 @@ const ReelsUploadPage = async () => {
     <UploadReel uploadUrl={result.uploadUrl} />
   ) : (
     <div className="flex h-screen items-center justify-center">
-      <p className="text-lg text-gray-500">Failed to get upload URL</p>
+      <p className="text-muted-foreground text-lg">Failed to get upload URL</p>
     </div>
   );
 };
