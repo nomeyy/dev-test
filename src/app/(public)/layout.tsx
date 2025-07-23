@@ -14,9 +14,9 @@ export default async function PublicLayout({
 }) {
   const [session, language] = await Promise.all([getSession(), getLanguage()]);
 
-  if (session?.user) {
-    redirect(paths.homePage, RedirectType.replace);
-  }
+  // if (session?.user) {
+  //   redirect(paths.homePage, RedirectType.replace);
+  // }
 
   // We still want to provide a session to the context
   // to preserve auth state during authentication flows

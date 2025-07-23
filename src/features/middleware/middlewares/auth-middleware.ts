@@ -28,7 +28,7 @@ export const authMiddleware: Middleware = async (request, next) => {
   }
 
   // Redirect authenticated users away from public routes
-  if (isPublicRoute(path) && hasSession) {
+  if (isPublicRoute(path) && hasSession && !path.startsWith("/temps/test")) {
     return NextResponse.redirect(new URL(paths.homePage, request.url));
   }
 
