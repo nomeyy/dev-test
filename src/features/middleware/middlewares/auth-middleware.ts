@@ -19,17 +19,27 @@ export const authMiddleware: Middleware = async (request, next) => {
     return await next();
   }
 
-  // Check authentication status
-  const hasSession = !!request.cookies.get(authConfig.sessionCookieName);
+  // Check authentication status - check both session cookie names
+  const sessionCookie = request.cookies.get(authConfig.sessionCookieName);
+  const csrfCookie = request.cookies.get(authConfig.csrfCookieName);
+  const hasSession = !!(sessionCookie ?? csrfCookie);
 
   // Redirect unauthenticated users away from protected routes
   if (isProtectedRoute(path) && !hasSession) {
-    return NextResponse.redirect(new URL(paths.landingPage, request.url));
+    const redirectUrl = new URL(paths.landingPage, request.url);
+    console.log(
+      `Redirecting unauthenticated user from ${path} to ${redirectUrl.pathname}`,
+    );
+    return NextResponse.redirect(redirectUrl);
   }
 
-  // Redirect authenticated users away from public routes
-  if (isPublicRoute(path) && hasSession) {
-    return NextResponse.redirect(new URL(paths.homePage, request.url));
+  // Redirect authenticated users away from public routes (except landing page)
+  if (isPublicRoute(path) && hasSession && path !== paths.landingPage) {
+    const redirectUrl = new URL(paths.homePage, request.url);
+    console.log(
+      `Redirecting authenticated user from ${path} to ${redirectUrl.pathname}`,
+    );
+    return NextResponse.redirect(redirectUrl);
   }
 
   // Continue to the next middleware or route handler
