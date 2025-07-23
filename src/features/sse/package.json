@@ -1,0 +1,10 @@
+{
+  "name": "@features/sse",
+  "version": "1.0.0",
+  "description": "Server-Sent Events feature module for real-time notifications",
+  "main": "index.ts",
+  "dependencies": {},
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}
