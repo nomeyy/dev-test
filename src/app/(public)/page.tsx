@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
+import { SseTestUI } from "./temps/SseTestUI";
 
 const LandingPage = () => (
   <>
@@ -20,6 +21,9 @@ const LandingPage = () => (
     >
       {"Sign in"}
     </Link>
+    <div>
+      <SseTestUI />
+    </div>
   </>
 );
 
