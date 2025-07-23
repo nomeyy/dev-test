@@ -1,12 +1,15 @@
 import Link from "next/link";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
+import SSEClient from '@/components/SSEClient'
 
 const LandingPage = () => (
   <>
     <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
       Create <span className="text-[hsl(280,100%,70%)]">Nomey</span>
     </h1>
+
+    <SSEClient />
 
     <div className="max-w-[600px] space-y-5 text-left">
       <ClientComponent />
@@ -20,6 +23,7 @@ const LandingPage = () => (
     >
       {"Sign in"}
     </Link>
+
   </>
 );
 
