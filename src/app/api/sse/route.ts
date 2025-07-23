@@ -15,17 +15,22 @@ export async function GET(request: NextRequest) {
   const session = await auth();
   const clientId = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+  // Extract client-specific ID from query params if provided
+  const { searchParams } = new URL(request.url);
+  const customClientId = searchParams.get("clientId");
+
   const stream = new ReadableStream({
     start(controller) {
-      // Store client connection
-      clients.set(clientId, {
+      // Store client connection with custom client ID if provided
+      const finalClientId = customClientId || clientId;
+      clients.set(finalClientId, {
         userId: session?.user?.id,
         controller,
         lastHeartbeat: Date.now(),
       });
 
       // Send initial message
-      const message = `data: ${JSON.stringify({ event: "connected", clientId })}\n\n`;
+      const message = `data: ${JSON.stringify({ event: "connected", clientId: finalClientId })}\n\n`;
       controller.enqueue(new TextEncoder().encode(message));
 
       // Start heartbeat for this client
@@ -48,7 +53,7 @@ export async function GET(request: NextRequest) {
       // Handle disconnect
       request.signal.addEventListener("abort", () => {
         clearInterval(heartbeatInterval);
-        clients.delete(clientId);
+        clients.delete(finalClientId);
         controller.close();
       });
     },

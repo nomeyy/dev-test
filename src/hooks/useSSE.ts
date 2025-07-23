@@ -8,13 +8,22 @@ interface SSEEvent {
   timestamp: number;
 }
 
-export function useSSE() {
+export function useSSE(clientId?: string) {
   const [events, setEvents] = useState<SSEEvent[]>([]);
   const [lastEvent, setLastEvent] = useState<SSEEvent | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [currentClientId, setCurrentClientId] = useState<string | null>(null);
 
   useEffect(() => {
-    const eventSource = new EventSource("/api/sse");
+    // Reset events when clientId changes
+    setEvents([]);
+    setLastEvent(null);
+    setCurrentClientId(null);
+
+    const url = clientId
+      ? `/api/sse?clientId=${encodeURIComponent(clientId)}`
+      : "/api/sse";
+    const eventSource = new EventSource(url);
 
     eventSource.onopen = () => {
       setIsConnected(true);
@@ -37,6 +46,16 @@ export function useSSE() {
 
       setLastEvent(sseEvent);
       setEvents((prev) => [...prev, sseEvent]);
+
+      // Store client ID from connection event
+      if (
+        sseEvent.event === "connected" &&
+        typeof sseEvent.data === "object" &&
+        sseEvent.data &&
+        "clientId" in sseEvent.data
+      ) {
+        setCurrentClientId(sseEvent.data.clientId as string);
+      }
     };
 
     eventSource.onerror = () => {
@@ -46,7 +65,7 @@ export function useSSE() {
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [clientId]);
 
   const sendEvent = async (
     event: string,
@@ -70,5 +89,6 @@ export function useSSE() {
     lastEvent,
     isConnected,
     sendEvent,
+    currentClientId,
   };
 }
