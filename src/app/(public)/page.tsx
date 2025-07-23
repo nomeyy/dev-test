@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
+import SSETest from "../../components/SSETest";
 
 const LandingPage = () => (
   <>
@@ -13,6 +14,8 @@ const LandingPage = () => (
 
       <ServerComponent />
     </div>
+
+    <SSETest />
 
     <Link
       href={"/api/auth/signin"}
