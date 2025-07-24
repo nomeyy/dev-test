@@ -7,7 +7,7 @@ function getSSEManager(): SSEManager {
   if (!sseManager) {
     sseManager = new SSEManager({
       heartbeatInterval: 30000,
-      connectionTimeout: 120000,
+      connectionTimeout: 300000,
       maxConnections: 1000,
       enableRedis: false,
       enableLogging: true,

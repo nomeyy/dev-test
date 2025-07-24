@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { randomUUID } from "crypto";
 
 const DEFAULT_HEARTBEAT_INTERVAL = parseInt(
-  process.env.SSE_HEARTBEAT_INTERVAL || "5000",
+  process.env.SSE_HEARTBEAT_INTERVAL || "300000",
   10,
 );
 
@@ -18,7 +18,7 @@ function getSSEManager(): SSEManager {
   if (!sseManager) {
     sseManager = new SSEManager({
       heartbeatInterval: DEFAULT_HEARTBEAT_INTERVAL,
-      connectionTimeout: 120000, // 2 minutes
+      connectionTimeout: 300000, // 2 minutes
       maxConnections: 1000,
       enableRedis: false, // TODO: Enable when Redis integration is implemented
       enableLogging: true,
@@ -37,6 +37,10 @@ export async function GET(request: NextRequest) {
   try {
     // Get authentication session
     const session = await auth();
+    if (!session?.user?.id) {
+      console.log("🔒 SSE connection denied: user not authenticated");
+      return new Response("Authentication required", { status: 401 });
+    }
     console.log("👤 Auth Session:", {
       userId: session?.user?.id,
       email: session?.user?.email,

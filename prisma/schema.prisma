@@ -50,6 +50,7 @@ model User {
     image         String?
     accounts      Account[]
     sessions      Session[]
+    sseConnections SSEConnection[]
 }
 
 model VerificationToken {
@@ -58,4 +59,15 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+model SSEConnection {
+  id            String   @id @default(uuid())
+  userId        String
+  sessionId     String
+  clientId      String   @unique
+  state         String
+  connectedAt   DateTime @default(now())
+  lastHeartbeat DateTime
+  user          User     @relation(fields: [userId], references: [id])
 }

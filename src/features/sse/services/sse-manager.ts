@@ -11,6 +11,18 @@ import { SSEConnectionState } from "../types/sse-types";
 // Import the global client stream map for event delivery
 import { sseClientStreams } from "@/app/api/sse/route";
 import { setTimeout as delay } from "timers/promises";
+import {
+  createSSEConnection,
+  updateSSEConnection,
+  deleteSSEConnection,
+  getActiveSSEConnections,
+  getSSEConnectionsByUser,
+  cleanupStaleSSEConnections,
+} from "./sse-connection-db";
+import { PrismaClient } from "@prisma/client";
+import type { SSEConnection } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 /**
  * SSE Manager service for handling Server-Sent Events
@@ -79,6 +91,34 @@ export class SSEManager implements SSEManagerType {
     // Store client
     this.clients.set(client.id, fullClient);
 
+    if (this.config.enableLogging) {
+      console.log(
+        `[SSEManager] Upserting SSEConnection in DB for clientId: ${client.id}`,
+      );
+    }
+    // Register or update in DB
+    await prisma.sSEConnection.upsert({
+      where: { clientId: client.id },
+      update: {
+        userId: client.userId!,
+        sessionId: client.sessionId,
+        state: "connected",
+        lastHeartbeat: now,
+      },
+      create: {
+        clientId: client.id,
+        userId: client.userId!,
+        sessionId: client.sessionId,
+        state: "connected",
+        lastHeartbeat: now,
+      },
+    });
+    if (this.config.enableLogging) {
+      console.log(
+        `[SSEManager] Upserted SSEConnection in DB for clientId: ${client.id}`,
+      );
+    }
+
     // Add to user mapping if userId exists
     if (client.userId) {
       if (!this.userClients.has(client.userId)) {
@@ -114,6 +154,9 @@ export class SSEManager implements SSEManagerType {
 
     client.isConnected = false;
     client.state = SSEConnectionState.DISCONNECTED;
+
+    // Remove from DB
+    await deleteSSEConnection(clientId);
 
     // Remove from user mapping
     if (client.userId) {
@@ -153,9 +196,29 @@ export class SSEManager implements SSEManagerType {
   }
 
   getConnectedClients(): SSEClient[] {
+    // This is a sync method, but DB is async. For now, return in-memory clients.
+    // For full DB-driven, refactor to async and use getActiveSSEConnections().
     return Array.from(this.clients.values()).filter(
       (client) => client.isConnected,
     );
+  }
+
+  async getConnectedClientsFromDB(): Promise<SSEClient[]> {
+    const dbConnections = await getActiveSSEConnections();
+    // Map DB records to SSEClient shape as needed
+    return dbConnections.map((conn) => ({
+      id: conn.clientId,
+      userId: conn.userId,
+      sessionId: conn.sessionId,
+      connectionTime: conn.connectedAt,
+      lastHeartbeat: conn.lastHeartbeat,
+      isConnected: conn.state === "connected",
+      userAgent: undefined,
+      ipAddress: undefined,
+      groups: new Set(),
+      roles: undefined,
+      state: conn.state as any,
+    }));
   }
 
   getClientsByUser(userId: string): SSEClient[] {
@@ -187,12 +250,47 @@ export class SSEManager implements SSEManagerType {
     clientId: string,
     event: Omit<SSEEvent, "id" | "timestamp">,
   ): Promise<void> {
-    const client = this.clients.get(clientId);
+    let client = this.clients.get(clientId);
+
     if (!client) {
-      this.errorCount++;
-      this.lastError = `Client not found: ${clientId}`;
-      throw createSSEError.clientNotFound(clientId);
+      if (this.config.enableLogging) {
+        console.log(
+          `[SSEManager] Fetching client info from DB for clientId: ${clientId}`,
+        );
+      }
+      const dbConn = await prisma.sSEConnection.findUnique({
+        where: { clientId },
+      });
+      if (!dbConn || dbConn.state !== "connected") {
+        this.errorCount++;
+        this.lastError = `Client not found or not connected: ${clientId}`;
+        if (this.config.enableLogging) {
+          console.log(
+            `[SSEManager] Client not found or not connected in DB for clientId: ${clientId}`,
+          );
+        }
+        throw createSSEError.clientNotFound(clientId);
+      }
+      client = {
+        id: dbConn.clientId,
+        userId: dbConn.userId,
+        sessionId: dbConn.sessionId,
+        connectionTime: dbConn.connectedAt,
+        lastHeartbeat: dbConn.lastHeartbeat,
+        isConnected: dbConn.state === "connected",
+        userAgent: undefined,
+        ipAddress: undefined,
+        groups: new Set(),
+        roles: undefined,
+        state: dbConn.state as any,
+      };
+      if (this.config.enableLogging) {
+        console.log(
+          `[SSEManager] Found client in DB for clientId: ${clientId}`,
+        );
+      }
     }
+
     if (!client.isConnected) {
       this.errorCount++;
       this.lastError = `Client disconnected: ${clientId}`;
@@ -258,22 +356,24 @@ export class SSEManager implements SSEManagerType {
     userId: string,
     event: Omit<SSEEvent, "id" | "timestamp">,
   ): Promise<void> {
-    const userClients = this.getClientsByUser(userId);
-    if (userClients.length === 0) {
+    // Use DB for active connections
+    const userConnections = await getSSEConnectionsByUser(userId);
+    if (userConnections.length === 0) {
       if (this.config.enableLogging) {
         console.log(`No connected clients found for user: ${userId}`);
       }
       return;
     }
-
-    const promises = userClients.map((client) =>
-      this.sendEventToClient(client.id, event).catch((error) => {
+    const promises = userConnections.map((conn) =>
+      this.sendEventToClient(conn.clientId, event).catch((error) => {
         if (this.config.enableLogging) {
-          console.error(`Failed to send event to client ${client.id}:`, error);
+          console.error(
+            `Failed to send event to client ${conn.clientId}:`,
+            error,
+          );
         }
       }),
     );
-
     await Promise.allSettled(promises);
   }
 
@@ -281,47 +381,34 @@ export class SSEManager implements SSEManagerType {
     group: string,
     event: Omit<SSEEvent, "id" | "timestamp">,
   ): Promise<void> {
-    const groupClients = this.getClientsByGroup(group);
-    if (groupClients.length === 0) {
-      if (this.config.enableLogging) {
-        console.log(`No connected clients found for group: ${group}`);
-      }
+    // For demo: if group is 'all', broadcast; else treat as userId
+    if (group === "all") {
+      await this.broadcastEvent(event);
       return;
     }
-
-    const promises = groupClients.map((client) =>
-      this.sendEventToClient(client.id, event).catch((error) => {
-        if (this.config.enableLogging) {
-          console.error(`Failed to send event to client ${client.id}:`, error);
-        }
-      }),
-    );
-
-    await Promise.allSettled(promises);
+    await this.sendEventToUser(group, event);
   }
 
   async broadcastEvent(
     event: Omit<SSEEvent, "id" | "timestamp">,
   ): Promise<void> {
-    const connectedClients = this.getConnectedClients();
-    if (connectedClients.length === 0) {
+    const dbConnections = await getActiveSSEConnections();
+    if (dbConnections.length === 0) {
       if (this.config.enableLogging) {
         console.log("No connected clients to broadcast to");
       }
       return;
     }
-
-    const promises = connectedClients.map((client) =>
-      this.sendEventToClient(client.id, event).catch((error) => {
+    const promises = dbConnections.map((conn) =>
+      this.sendEventToClient(conn.clientId, event).catch((error) => {
         if (this.config.enableLogging) {
           console.error(
-            `Failed to broadcast event to client ${client.id}:`,
+            `Failed to broadcast event to client ${conn.clientId}:`,
             error,
           );
         }
       }),
     );
-
     await Promise.allSettled(promises);
   }
 
@@ -330,26 +417,23 @@ export class SSEManager implements SSEManagerType {
     const client = this.clients.get(clientId);
     if (client) {
       client.lastHeartbeat = new Date();
+      // Update heartbeat in DB
+      await updateSSEConnection(clientId, {
+        lastHeartbeat: client.lastHeartbeat,
+      });
     }
   }
 
   async cleanupStaleConnections(): Promise<void> {
+    // In-memory cleanup (legacy)
     const now = new Date();
     const staleClients: string[] = [];
-
     for (const [clientId, client] of this.clients.entries()) {
       const timeSinceHeartbeat = now.getTime() - client.lastHeartbeat.getTime();
       if (timeSinceHeartbeat > this.config.connectionTimeout) {
         staleClients.push(clientId);
       }
     }
-
-    if (staleClients.length > 0 && this.config.enableLogging) {
-      console.log(
-        `🧹 Found ${staleClients.length} stale connections to clean up`,
-      );
-    }
-
     for (const clientId of staleClients) {
       try {
         await this.disconnectClient(clientId);
@@ -365,7 +449,24 @@ export class SSEManager implements SSEManagerType {
         }
       }
     }
-
+    // DB cleanup
+    try {
+      const result = await cleanupStaleSSEConnections(
+        this.config.connectionTimeout,
+      );
+      if (this.config.enableLogging) {
+        console.log(
+          `🧹 DB cleanup: removed ${result.count} stale SSE connections`,
+        );
+      }
+    } catch (error) {
+      if (this.config.enableLogging) {
+        console.error(
+          "❌ Error during DB cleanup of stale SSE connections:",
+          error,
+        );
+      }
+    }
     this.stats.lastCleanup = now;
   }
 
