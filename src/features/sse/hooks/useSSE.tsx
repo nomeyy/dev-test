@@ -53,6 +53,29 @@ export function useSSE(
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
 
+  // Store callbacks in refs to avoid dependency issues
+  const onMessageRef = useRef(onMessage);
+  const onConnectRef = useRef(onConnect);
+  const onErrorRef = useRef(onError);
+  const onDisconnectRef = useRef(onDisconnect);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
+  useEffect(() => {
+    onConnectRef.current = onConnect;
+  }, [onConnect]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
+  useEffect(() => {
+    onDisconnectRef.current = onDisconnect;
+  }, [onDisconnect]);
+
   const buildUrl = useCallback(() => {
     const urlObj = new URL(url, window.location.origin);
 
@@ -106,7 +129,7 @@ export function useSSE(
           reconnectAttempts: 0,
         }));
         reconnectAttemptsRef.current = 0;
-        onConnect?.();
+        onConnectRef.current?.();
         logger.info("SSE-Client", "Connected to SSE endpoint");
       };
 
@@ -119,7 +142,7 @@ export function useSSE(
           };
 
           setState((prev) => ({ ...prev, lastEvent: sseEvent }));
-          onMessage?.(sseEvent);
+          onMessageRef.current?.(sseEvent);
         } catch (error) {
           logger.error("SSE-Client", "Failed to parse SSE message", error);
         }
@@ -133,7 +156,7 @@ export function useSSE(
           error: "Connection error",
         }));
 
-        onError?.(error);
+        onErrorRef.current?.(error);
         logger.error("SSE-Client", "SSE connection error", error);
 
         // Handle reconnection
@@ -166,7 +189,7 @@ export function useSSE(
             timestamp: Date.now(),
           };
           setState((prev) => ({ ...prev, lastEvent: sseEvent }));
-          onMessage?.(sseEvent);
+          onMessageRef.current?.(sseEvent);
         } catch (error) {
           logger.error(
             "SSE-Client",
@@ -184,7 +207,7 @@ export function useSSE(
             timestamp: Date.now(),
           };
           setState((prev) => ({ ...prev, lastEvent: sseEvent }));
-          onMessage?.(sseEvent);
+          onMessageRef.current?.(sseEvent);
         } catch (error) {
           logger.error(
             "SSE-Client",
@@ -202,7 +225,7 @@ export function useSSE(
             timestamp: Date.now(),
           };
           setState((prev) => ({ ...prev, lastEvent: sseEvent }));
-          onMessage?.(sseEvent);
+          onMessageRef.current?.(sseEvent);
         } catch (error) {
           logger.error("SSE-Client", "Failed to parse data_sync event", error);
         }
@@ -216,7 +239,7 @@ export function useSSE(
             timestamp: Date.now(),
           };
           setState((prev) => ({ ...prev, lastEvent: sseEvent }));
-          onMessage?.(sseEvent);
+          onMessageRef.current?.(sseEvent);
         } catch (error) {
           logger.error(
             "SSE-Client",
@@ -234,7 +257,7 @@ export function useSSE(
             timestamp: Date.now(),
           };
           // Don't update lastEvent for heartbeats
-          onMessage?.(sseEvent);
+          onMessageRef.current?.(sseEvent);
         } catch (error) {
           logger.error("SSE-Client", "Failed to parse heartbeat event", error);
         }
@@ -254,9 +277,6 @@ export function useSSE(
     autoReconnect,
     maxReconnectAttempts,
     reconnectDelay,
-    onConnect,
-    onError,
-    onMessage,
   ]);
 
   const disconnect = useCallback(() => {
@@ -278,9 +298,9 @@ export function useSSE(
     }));
 
     reconnectAttemptsRef.current = 0;
-    onDisconnect?.();
+    onDisconnectRef.current?.();
     logger.info("SSE-Client", "Disconnected from SSE endpoint");
-  }, [onDisconnect]);
+  }, []);
 
   const sendMessage = useCallback((event: string, data: any) => {
     // Note: SSE is server-to-client only, so this is just for logging
@@ -295,13 +315,6 @@ export function useSSE(
       disconnect();
     };
   }, [connect, disconnect]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, [disconnect]);
 
   return {
     ...state,

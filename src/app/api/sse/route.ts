@@ -6,12 +6,9 @@ import type { SSEClient, SSEConnectionOptions } from "@/features/sse/types";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get session for authentication
     const session = await auth();
-
-    // Extract connection options from query parameters
     const { searchParams } = new URL(request.url);
-    const userId = session?.user?.id;
+    const userId = session?.user?.id || "anonymous";
     const sessionId = searchParams.get("sessionId") || `session-${Date.now()}`;
     const metadata = searchParams.get("metadata")
       ? JSON.parse(searchParams.get("metadata")!)
@@ -29,13 +26,12 @@ export async function GET(request: NextRequest) {
       ),
     };
 
-    // Create SSE response
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
         const clientId = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        let isClosed = false; // Flag to prevent double-closing
 
-        // Create SSE client
         const client: SSEClient = {
           id: clientId,
           userId: connectionOptions.userId,
@@ -43,19 +39,27 @@ export async function GET(request: NextRequest) {
           headers: request.headers,
           send: (data: string) => {
             try {
-              controller.enqueue(encoder.encode(data));
+              if (!isClosed) {
+                controller.enqueue(encoder.encode(data));
+              }
             } catch (error: unknown) {
               logger.error(
                 "SSE",
                 `Failed to send data to client ${clientId}`,
                 error,
               );
-              controller.close();
+              if (!isClosed) {
+                controller.close();
+                isClosed = true;
+              }
             }
           },
           close: () => {
             try {
-              controller.close();
+              if (!isClosed) {
+                controller.close();
+                isClosed = true;
+              }
             } catch (error: unknown) {
               logger.error("SSE", `Failed to close client ${clientId}`, error);
             }
@@ -65,7 +69,6 @@ export async function GET(request: NextRequest) {
           metadata: connectionOptions.metadata,
         };
 
-        // Add client to manager
         getSSEManager()
           .addClient(client)
           .then(() => {
@@ -80,27 +83,39 @@ export async function GET(request: NextRequest) {
               `Failed to add client ${clientId} to manager`,
               error,
             );
-            controller.close();
+            if (!isClosed) {
+              controller.close();
+              isClosed = true;
+            }
           });
 
-        // Handle client disconnect
-        request.signal.addEventListener("abort", () => {
-          logger.info("SSE", `Client ${clientId} disconnected (abort signal)`);
-          getSSEManager().removeClient(clientId);
-          controller.close();
-        });
+        const closeConnection = async () => {
+          if (!isClosed) {
+            logger.info("SSE", `Client ${clientId} disconnected`);
+            try {
+              await getSSEManager().removeClient(clientId);
+            } catch (error: unknown) {
+              logger.error(
+                "SSE",
+                `Failed to remove client ${clientId} from manager`,
+                error,
+              );
+            }
+            controller.close();
+            isClosed = true;
+          }
+        };
 
-        // Handle stream close
+        request.signal.addEventListener("abort", closeConnection);
+
+        // Override the controller's close method to prevent double-closing
         const originalClose = controller.close.bind(controller);
         controller.close = () => {
-          logger.info("SSE", `Client ${clientId} disconnected (stream close)`);
-          getSSEManager().removeClient(clientId);
-          originalClose();
+          closeConnection();
         };
       },
     });
 
-    // Set SSE headers
     const response = new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
@@ -122,7 +137,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Handle OPTIONS for CORS
 export async function OPTIONS() {
   return new Response(null, {
     status: 200,

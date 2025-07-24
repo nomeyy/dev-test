@@ -95,7 +95,20 @@ export class SSEManager {
 
   public async addClient(client: SSEClient): Promise<void> {
     if (this.clients.size >= this.config.maxConnections!) {
+      logger.warn(
+        "SSE",
+        `Maximum connections (${this.config.maxConnections}) reached. Rejecting new connection.`,
+      );
       throw new Error("Maximum connections reached");
+    }
+
+    // Check if client already exists
+    if (this.clients.has(client.id)) {
+      logger.warn(
+        "SSE",
+        `Client ${client.id} already exists. Removing old connection.`,
+      );
+      await this.removeClient(client.id);
     }
 
     this.clients.set(client.id, client);
@@ -112,16 +125,36 @@ export class SSEManager {
     });
   }
 
-  public removeClient(clientId: string): void {
-    const client = this.clients.get(clientId);
-    if (client) {
-      client.close();
+  /**
+   * Remove a client from the manager
+   */
+  async removeClient(clientId: string): Promise<void> {
+    try {
+      const client = this.clients.get(clientId);
+      if (!client) {
+        logger.warn(
+          "SSE",
+          `Client ${clientId} not found when trying to remove`,
+        );
+        return;
+      }
+
+      // Mark client as disconnected
+      client.isConnected = false;
+
+      // Close the client connection
+      try {
+        client.close();
+      } catch (error: unknown) {
+        logger.error("SSE", `Failed to close client ${clientId}`, error);
+      }
+
+      // Remove from clients map
       this.clients.delete(clientId);
 
-      logger.info("SSE", `Client disconnected: ${clientId}`, {
-        userId: client.userId,
-        totalConnections: this.clients.size,
-      });
+      logger.info("SSE", `Client ${clientId} removed from manager`);
+    } catch (error: unknown) {
+      logger.error("SSE", `Failed to remove client ${clientId}`, error);
     }
   }
 
