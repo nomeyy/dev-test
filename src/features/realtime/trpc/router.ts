@@ -103,8 +103,10 @@ export const realtimeRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       const userName = ctx.session.user.name ?? "Unknown User";
 
+      // Use translation keys - in production you'd get the user's locale and translate
+      // For now, we'll use English as the server-side default
       await realtimeService.sendInfoEvent(
-        "Personal Test Event",
+        "Personal Test Event", // In production: t("realtime:testEvents.personalTestTitle")
         `Hello ${userName}! This realtime event is just for you at ${new Date().toLocaleTimeString()}`,
         { userId },
       );
@@ -115,8 +117,10 @@ export const realtimeRouter = createTRPCRouter({
   sendBroadcast: protectedProcedure.mutation(async ({ ctx }) => {
     const userName = ctx.session.user.name ?? "Unknown User";
 
+    // Use translation keys - in production you'd get the user's locale and translate
+    // For now, we'll use English as the server-side default
     await realtimeService.sendSuccessEvent(
-      "Broadcast Message",
+      "Broadcast Message", // In production: t("realtime:testEvents.broadcastTitle")
       `${userName} sent a message to everyone at ${new Date().toLocaleTimeString()}`,
       { broadcast: true },
     );

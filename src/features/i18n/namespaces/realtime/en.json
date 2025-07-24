@@ -1,0 +1,31 @@
+{
+  "title": "Real-Time Events",
+  "features": {
+    "heartbeat": "Heartbeat enabled (30s intervals)",
+    "userSpecific": "User-specific events",
+    "broadcast": "Broadcast events"
+  },
+  "buttons": {
+    "personalEvent": "Personal Event",
+    "broadcastToAll": "Broadcast to All",
+    "sending": "Sending...",
+    "broadcasting": "Broadcasting..."
+  },
+  "events": {
+    "liveEventsTitle": "Live Events:",
+    "noEventsYet": "No events yet",
+    "clickToTest": "Click buttons above to test",
+    "personal": "Personal",
+    "broadcast": "Broadcast"
+  },
+  "connection": {
+    "sseConnection": "SSE Connection:",
+    "active": "Active"
+  },
+  "testEvents": {
+    "personalTestTitle": "Personal Test Event",
+    "personalTestMessage": "Hello {{userName}}! This realtime event is just for you at {{time}}",
+    "broadcastTitle": "Broadcast Message",
+    "broadcastMessage": "{{userName}} sent a message to everyone at {{time}}"
+  }
+}

@@ -1,9 +1,11 @@
 import { getSession, signOut } from "@/features/auth";
 import { WelcomeMessage } from "@/features/home";
+import { TranslationProvider, getLanguage } from "@/features/i18n";
 import { RealtimeDemo } from "@/features/realtime";
 
 export default async function HomePage() {
   const session = await getSession();
+  const language = await getLanguage();
 
   const handleSignOut = async () => {
     "use server";
@@ -19,7 +21,9 @@ export default async function HomePage() {
         />
       </div>
 
-      <RealtimeDemo />
+      <TranslationProvider language={language} namespaces={["realtime"]}>
+        <RealtimeDemo />
+      </TranslationProvider>
     </div>
   );
 }

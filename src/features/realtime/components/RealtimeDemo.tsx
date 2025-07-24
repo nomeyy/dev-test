@@ -1,8 +1,11 @@
 "use client";
 
 import { api } from "@/trpc/react";
+import { useTranslation } from "react-i18next";
 
 export function RealtimeDemo() {
+  const { t } = useTranslation("realtime");
+
   // Subscribe to real-time events
   const { data } = api.realtime.subscribe.useSubscription({});
 
@@ -12,11 +15,11 @@ export function RealtimeDemo() {
 
   return (
     <div className="mx-auto max-w-lg rounded-lg bg-white p-6 shadow-md">
-      <h2 className="mb-4 text-xl font-bold text-gray-900">Real-Time Events</h2>
+      <h2 className="mb-4 text-xl font-bold text-gray-900">{t("title")}</h2>
       <div className="mb-4 space-y-1 text-sm text-gray-600">
-        <div>Heartbeat enabled (30s intervals)</div>
-        <div>User-specific events</div>
-        <div>Broadcast events</div>
+        <div>{t("features.heartbeat")}</div>
+        <div>{t("features.userSpecific")}</div>
+        <div>{t("features.broadcast")}</div>
       </div>
 
       <div className="mb-6 space-y-2">
@@ -25,7 +28,9 @@ export function RealtimeDemo() {
           disabled={sendPersonalTest.isPending}
           className="w-full rounded bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600 disabled:bg-blue-300"
         >
-          {sendPersonalTest.isPending ? "Sending..." : "Personal Event"}
+          {sendPersonalTest.isPending
+            ? t("buttons.sending")
+            : t("buttons.personalEvent")}
         </button>
 
         <button
@@ -33,13 +38,17 @@ export function RealtimeDemo() {
           disabled={sendBroadcast.isPending}
           className="w-full rounded bg-green-500 px-4 py-2 font-medium text-white hover:bg-green-600 disabled:bg-green-300"
         >
-          {sendBroadcast.isPending ? "Broadcasting..." : "Broadcast to All"}
+          {sendBroadcast.isPending
+            ? t("buttons.broadcasting")
+            : t("buttons.broadcastToAll")}
         </button>
       </div>
 
       {/* Events Display */}
       <div className="min-h-[200px] rounded border bg-gray-50 p-4">
-        <h3 className="mb-3 font-semibold text-gray-900">Live Events:</h3>
+        <h3 className="mb-3 font-semibold text-gray-900">
+          {t("events.liveEventsTitle")}
+        </h3>
         <div className="max-h-80 space-y-3 overflow-y-auto">
           {data ? (
             <div
@@ -73,8 +82,8 @@ export function RealtimeDemo() {
                     }`}
                   >
                     {data.data.userId && data.data.userId !== "system"
-                      ? "Personal"
-                      : "Broadcast"}
+                      ? t("events.personal")
+                      : t("events.broadcast")}
                   </span>
                   <span className="text-xs whitespace-nowrap text-gray-600">
                     {new Date(data.data.timestamp).toLocaleTimeString()}
@@ -84,10 +93,8 @@ export function RealtimeDemo() {
             </div>
           ) : (
             <div className="py-8 text-center">
-              <p className="mb-1 text-gray-500">No events yet</p>
-              <p className="text-xs text-gray-400">
-                Click buttons above to test
-              </p>
+              <p className="mb-1 text-gray-500">{t("events.noEventsYet")}</p>
+              <p className="text-xs text-gray-400">{t("events.clickToTest")}</p>
             </div>
           )}
         </div>
@@ -96,8 +103,10 @@ export function RealtimeDemo() {
       {/* Connection Status */}
       <div className="mt-4 text-center text-xs">
         <span className="text-gray-500">
-          SSE Connection:{" "}
-          <span className="font-medium text-green-600">Active</span>
+          {t("connection.sseConnection")}{" "}
+          <span className="font-medium text-green-600">
+            {t("connection.active")}
+          </span>
         </span>
       </div>
     </div>

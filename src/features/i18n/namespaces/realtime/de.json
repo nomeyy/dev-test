@@ -1,0 +1,31 @@
+{
+  "title": "Echtzeit-Ereignisse",
+  "features": {
+    "heartbeat": "Heartbeat aktiviert (30s Intervalle)",
+    "userSpecific": "Benutzerspezifische Ereignisse",
+    "broadcast": "Broadcast-Ereignisse"
+  },
+  "buttons": {
+    "personalEvent": "Persönliches Ereignis",
+    "broadcastToAll": "An alle senden",
+    "sending": "Wird gesendet...",
+    "broadcasting": "Wird gesendet..."
+  },
+  "events": {
+    "liveEventsTitle": "Live-Ereignisse:",
+    "noEventsYet": "Noch keine Ereignisse",
+    "clickToTest": "Klicken Sie auf die Schaltflächen oben zum Testen",
+    "personal": "Persönlich",
+    "broadcast": "Broadcast"
+  },
+  "connection": {
+    "sseConnection": "SSE-Verbindung:",
+    "active": "Aktiv"
+  },
+  "testEvents": {
+    "personalTestTitle": "Persönliches Test-Ereignis",
+    "personalTestMessage": "Hallo {{userName}}! Dieses Echtzeit-Ereignis ist nur für Sie um {{time}}",
+    "broadcastTitle": "Broadcast-Nachricht",
+    "broadcastMessage": "{{userName}} hat um {{time}} eine Nachricht an alle gesendet"
+  }
+}
