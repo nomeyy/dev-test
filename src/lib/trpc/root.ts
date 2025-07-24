@@ -1,5 +1,6 @@
-import { createCallerFactory, createTRPCRouter } from "@/lib/trpc";
+import { createCallerFactory, createTRPCRouter } from "./index";
 import { searchRouter } from "@/features/search";
+import { realtimeRouter } from "@/features/realtime";
 
 /**
  * This is the primary router for your server.
@@ -8,16 +9,9 @@ import { searchRouter } from "@/features/search";
  */
 export const appRouter = createTRPCRouter({
   search: searchRouter,
+  realtime: realtimeRouter,
 });
 
-// export type definition of API
 export type AppRouter = typeof appRouter;
 
-/**
- * Create a server-side caller for the tRPC API.
- * @example
- * const trpc = createCaller(createContext);
- * const res = await trpc.post.all();
- *       ^? Post[]
- */
 export const createCaller = createCallerFactory(appRouter);
