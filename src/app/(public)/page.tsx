@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
+import SSEClient from "@/components/SSEClient";
 
 const LandingPage = () => (
   <>
