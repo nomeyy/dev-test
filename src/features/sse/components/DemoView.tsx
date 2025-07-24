@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useEventSubscription } from "@/features/sse";
+import { useEventSubscription } from "../hooks/useEventSubscription";
 import { api } from "@/trpc/react";
 import { Button } from "@/shared/components/ui/button";
 import { nanoid } from "nanoid";
