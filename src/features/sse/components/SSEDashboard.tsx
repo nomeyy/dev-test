@@ -8,6 +8,7 @@ export function SSEDashboard() {
   const [customMessage, setCustomMessage] = useState('Hello from SSE Demo!');
   const { sendMessage, broadcastMessage, activeClients, isSending } = useSSEOperations();
   const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [broadcastToAll, setBroadcastToAll] = useState<string>('off');
 
   const sendTestMessage = async () => {
     try {
@@ -42,7 +43,10 @@ export function SSEDashboard() {
                   name="selectedClient"
                   value={clientId}
                   checked={selectedClientId === clientId}
-                  onChange={(e) => setSelectedClientId(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedClientId(e.target.value)
+                    setBroadcastToAll('off');
+                  }}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                 />
                 <label
@@ -53,6 +57,26 @@ export function SSEDashboard() {
                 </label>
               </li>
             ))}
+            <li className="flex items-center gap-2">
+              <input
+                type="radio"
+                id="broadcast-all"
+                name="selectedClient"
+                checked={broadcastToAll === 'on'}
+                onChange={(e) => {
+                  debugger
+                  setBroadcastToAll(e.target.value);
+                  setSelectedClientId('');
+                }}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+              />
+              <label
+                htmlFor="broadcast-all"
+                className="text-sm font-medium text-gray-700 cursor-pointer"
+              >
+                Broadcast to all clients
+              </label>
+            </li>
           </ul>
         ) : (
           <p className="text-gray-500 text-sm">No active clients connected</p>
@@ -78,12 +102,13 @@ export function SSEDashboard() {
               variant="default"
               className="text-base"
             >
-              {isSending ? 'Sending...' : 'Send Message'}
+              {'Send Message'}
             </Button>
             <Button
               onClick={broadcastMessageToClients}
               variant="default"
               className="text-base"
+              disabled={broadcastToAll === 'off'}
             >
               {isSending ? 'Sending...' : 'Broadcast'}
             </Button>

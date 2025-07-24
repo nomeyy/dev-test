@@ -4,38 +4,15 @@ import { useState } from 'react';
 import { useSSE } from '../hooks/useSSEConnection';
 import type { SSEEvent } from '../types';
 import { Button } from '@/shared/components/ui/button';
-import { api } from '@/trpc/react';
 
 export function SSEClient() {
   const [events, setEvents] = useState<SSEEvent[]>([]);
-  const [isSending, setIsSending] = useState(false);
-  const [customMessage, setCustomMessage] = useState('Hello from SSE Demo!');
-  const sender = api.sse.sendMessage.useMutation();
 
   const { id, isConnected, isConnecting, error, lastEvent, reconnectAttempts, connect, disconnect, reconnect } = useSSE({
     onMessage: (event) => {
       setEvents(prev => [...prev.slice(-9), event]); // Keep last 10 events
     },
   });
-
-  const sendTestMessage = async () => {
-    if (!id) {
-      console.error('No client ID available');
-      return;
-    }
-
-    setIsSending(true);
-    try {
-      sender.mutate({
-        clientId: id,
-        message: customMessage,
-      });
-    } catch (error) {
-      console.error('Error sending test message:', error);
-    } finally {
-      setIsSending(false);
-    }
-  };
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -103,35 +80,6 @@ export function SSEClient() {
         </div>
       </div>
 
-      {/* Test Controls */}
-      <div className="mb-6 p-4 border rounded-lg bg-white shadow-sm">
-        <h2 className="text-xl font-semibold mb-3 text-gray-900">Test Controls</h2>
-
-        {/* Custom Message Input */}
-        <div className="mb-4">
-          <label htmlFor="customMessage" className="block text-sm font-medium text-gray-700 mb-2">
-            Custom Message
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="customMessage"
-              type="text"
-              value={customMessage}
-              onChange={(e) => setCustomMessage(e.target.value)}
-              placeholder="Enter your message here..."
-              className="flex-1 text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-            />
-            <Button
-              onClick={sendTestMessage}
-              // disabled={!isConnected || isSending || !id || !customMessage.trim()}
-              variant="default"
-              className="text-base"
-            >
-              {isSending ? 'Sending...' : 'Send Message'}
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {/* Latest Event */}
       {lastEvent && (

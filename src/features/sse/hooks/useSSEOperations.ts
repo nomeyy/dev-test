@@ -32,6 +32,6 @@ export function useSSEOperations(): UseSSEOperationsInterface {
     activeClients: activeClientsQuery.data?.map((item) => item.id),
     sendMessage,
     broadcastMessage,
-    isSending: sender.isPending || broadcaster.isPending,
+    isSending: broadcaster.isPending,
   }
 } 
