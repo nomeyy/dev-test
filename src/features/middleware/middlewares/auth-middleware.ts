@@ -29,6 +29,7 @@ export const authMiddleware: Middleware = async (request, next) => {
 
   // Redirect authenticated users away from public routes
   if (isPublicRoute(path) && hasSession) {
+    console.log("Authenticated user on public route, redirecting to home");
     return NextResponse.redirect(new URL(paths.homePage, request.url));
   }
 
