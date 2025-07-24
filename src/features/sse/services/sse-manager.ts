@@ -105,10 +105,7 @@ export class SSEManager {
     for (const client of this.clients.values()) {
       if (!client.isConnected) {
         try {
-          const ready = await client.writer.ready;
-          if (ready) {
-            await client.writer.close();
-          }
+          void client.writer.close();
           this.clients.delete(client.id);
           cleanedCount++;
         } catch (error) {

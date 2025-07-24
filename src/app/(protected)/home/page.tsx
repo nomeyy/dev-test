@@ -1,5 +1,5 @@
 import { getSession, signOut } from "@/features/auth";
-import { WelcomeMessage, SSENotifications } from "@/features/home";
+import { WelcomeMessage } from "@/features/home";
 
 const HomePage = async () => {
   const session = await getSession();
@@ -12,7 +12,6 @@ const HomePage = async () => {
   return (
     <>
       <WelcomeMessage name={session?.user.name ?? ""} signOut={handleSignOut} />
-      <SSENotifications />
     </>
   );
 };
