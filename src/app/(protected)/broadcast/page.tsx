@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useSSE } from "../../../features/sse/hooks/useSSE";
+import { Button } from "../../../features/shared/components/ui/button";
 
 export default function BroadcastPage() {
   const { events, status, clientId, reset } = useSSE("/api/sse?admin=1");
@@ -63,40 +64,20 @@ export default function BroadcastPage() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 700,
-        margin: "40px auto",
-        padding: 32,
-        background: "#181c2a",
-        borderRadius: 12,
-        color: "#fff",
-        boxShadow: "0 2px 16px #0002",
-      }}
-    >
-      <h2 style={{ marginBottom: 24 }}>SSE Broadcast Dashboard</h2>
-      <div style={{ marginBottom: 24, display: "flex", gap: 16 }}>
+    <div className="mx-auto mt-10 max-w-[700px] rounded-xl bg-[#181c2a] p-8 text-white shadow-lg">
+      <h2 className="mb-6">SSE Broadcast Dashboard</h2>
+      <div className="mb-6 flex gap-4">
         <input
           type="text"
           placeholder="Message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          style={{
-            flex: 1,
-            padding: 8,
-            borderRadius: 4,
-            border: "1px solid #333",
-          }}
+          className="flex-1 rounded border border-[#333] p-2"
         />
         <select
           value={targetClient}
           onChange={(e) => setTargetClient(e.target.value)}
-          style={{
-            padding: 8,
-            borderRadius: 4,
-            border: "1px solid #333",
-            minWidth: 120,
-          }}
+          className="min-w-[120px] rounded border border-[#333] p-2"
         >
           <option value="">All Clients</option>
           {clients.map((id) => (
@@ -105,63 +86,34 @@ export default function BroadcastPage() {
             </option>
           ))}
         </select>
-        <button
+        <Button
           onClick={targetClient ? sendToClient : sendBroadcast}
-          style={{
-            padding: "8px 16px",
-            borderRadius: 4,
-            background: "#4f8cff",
-            color: "#fff",
-            border: "none",
-            fontWeight: 600,
-          }}
+          className="rounded bg-[#4f8cff] px-4 py-2 font-semibold text-white"
         >
           Send
-        </button>
+        </Button>
       </div>
-      {sendStatus && (
-        <div style={{ color: "lightgreen", marginBottom: 16 }}>
-          {sendStatus}
-        </div>
-      )}
-      <div style={{ marginBottom: 24 }}>
+      {sendStatus && <div className="mb-4 text-green-300">{sendStatus}</div>}
+      <div className="mb-6">
         <strong>Connected Clients ({visibleClients.length}):</strong>
-        <div
-          style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}
-        >
+        <div className="mt-2 flex flex-wrap gap-2">
           {visibleClients.length === 0 ? (
-            <span style={{ color: "#aaa" }}>No clients connected</span>
+            <span className="text-[#aaa]">No clients connected</span>
           ) : (
             visibleClients.map((id) => (
-              <span
-                key={id}
-                style={{
-                  background: "#222",
-                  padding: "4px 8px",
-                  borderRadius: 4,
-                  fontSize: 13,
-                }}
-              >
+              <span key={id} className="rounded bg-[#222] px-2 py-1 text-sm">
                 {id}
               </span>
             ))
           )}
         </div>
       </div>
-      <div
-        style={{
-          maxHeight: 200,
-          overflowY: "auto",
-          background: "#222",
-          borderRadius: 6,
-          padding: 12,
-        }}
-      >
+      <div className="max-h-[200px] overflow-y-auto rounded bg-[#222] p-3">
         <strong>Event Log:</strong>
         {log.length === 0 ? (
-          <div style={{ color: "#aaa", marginTop: 8 }}>No events yet</div>
+          <div className="mt-2 text-[#aaa]">No events yet</div>
         ) : (
-          <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+          <ul className="m-0 list-none p-0">
             {log.map((e, i) => {
               const data =
                 typeof e.data === "object" && e.data !== null
@@ -196,29 +148,13 @@ export default function BroadcastPage() {
               return (
                 <li
                   key={i}
-                  style={{
-                    marginBottom: 12,
-                    background: "#23243a",
-                    borderRadius: 6,
-                    padding: "10px 16px",
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
+                  className="mb-3 flex items-center gap-2 rounded bg-[#23243a] p-3 text-white"
                 >
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      color,
-                      fontSize: 15,
-                      marginRight: 8,
-                    }}
-                  >
+                  <span className="mr-2 font-bold" style={{ color }}>
                     {icon} {label}
                   </span>
                   {e.event === "broadcast" && (
-                    <span style={{ fontSize: 15 }}>{data.message}</span>
+                    <span className="text-base">{data.message}</span>
                   )}
                 </li>
               );
@@ -226,33 +162,25 @@ export default function BroadcastPage() {
           </ul>
         )}
       </div>
-      <div style={{ marginTop: 24, fontSize: 13, color: "#aaa" }}>
+      <div className="mt-6 text-sm text-[#aaa]">
         <div>
           Status:{" "}
           <span
-            style={{
-              color: status === "connected" ? "lightgreen" : "red",
-              fontWeight: 600,
-            }}
+            className={
+              status === "connected"
+                ? "font-semibold text-green-300"
+                : "font-semibold text-red-500"
+            }
           >
             {status}
           </span>
         </div>
-
-        <button
+        <Button
           onClick={reset}
-          style={{
-            marginTop: 8,
-            padding: "6px 16px",
-            borderRadius: 4,
-            background: "#333",
-            color: "#fff",
-            border: "none",
-            fontWeight: 600,
-          }}
+          className="mt-2 rounded bg-[#333] px-4 py-1 font-semibold text-white"
         >
           Clear Log
-        </button>
+        </Button>
       </div>
     </div>
   );
