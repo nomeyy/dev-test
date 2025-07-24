@@ -1,0 +1,20 @@
+{
+  "connection": {
+    "connecting": "Connecting...",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "error": "Error",
+    "errorMessage": "Error: {{message}}",
+    "event": "Event: {{event}}",
+    "time": "Time: {{time}}"
+  },
+  "actions": {
+    "connection": "Connection Controls",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "sendToAll": "Send To All",
+    "sendToUser": "Send to User",
+    "sending": "Sending...",
+    "userId": "User id: {{id}}"
+  }
+}
