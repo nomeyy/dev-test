@@ -5,6 +5,12 @@ import type { Middleware } from "../types";
 import { LIMIT_PER_WINDOW, WINDOW_IN_SECONDS } from "../config";
 
 export const rateLimitMiddleware: Middleware = async (req, next) => {
+  // Skip rate limiting for SSE endpoints - they need persistent connections
+  const url = new URL(req.url);
+  if (url.pathname.startsWith("/api/sse")) {
+    return next();
+  }
+
   // Get cached clients for redis and rate limiting
   const redis = await getRedis();
   const limiter = await getRateLimiter(redis, {
