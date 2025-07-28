@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, type ReactNode } from "react";
+import { SessionProvider } from "next-auth/react";
 import { type Session } from "next-auth";
 
 // Create a typed context for nullable session data
@@ -16,8 +17,10 @@ export function PublicSessionProvider({
   session: Session | null;
 }) {
   return (
-    <PublicSessionContext.Provider value={{ session }}>
-      {children}
-    </PublicSessionContext.Provider>
+    <SessionProvider session={session}>
+      <PublicSessionContext.Provider value={{ session }}>
+        {children}
+      </PublicSessionContext.Provider>
+    </SessionProvider>
   );
 }

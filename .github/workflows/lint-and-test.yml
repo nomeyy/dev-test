@@ -1,5 +1,5 @@
 name: Lint & Test
-on: 
+on:
   pull_request:
     branches:
       - main
@@ -15,7 +15,7 @@ jobs:
     steps:
       # Checkout codebase
       - uses: actions/checkout@v4
-      
+
       # Cache dependencies
       - uses: useblacksmith/cache@v5
         id: npm-cache
@@ -24,7 +24,7 @@ jobs:
             node_modules
             ~/.npm
           key: ${{ runner.os }}-frontend-${{ hashFiles('package-lock.json') }}
-      
+
       # Install dependencies
       - name: Install Dependencies
         if: steps.npm-cache.outputs.cache-hit != 'true'
@@ -39,7 +39,7 @@ jobs:
             echo ".env.test file is missing! Aborting."
             exit 1
           fi
-          
+
           # Use a more robust way to load environment variables that handles special characters
           while IFS= read -r line || [[ -n "$line" ]]; do
             # Skip comments and empty lines
@@ -57,15 +57,15 @@ jobs:
             # Add to GitHub environment
             echo "$var_name=$var_value" >> $GITHUB_ENV
           done < .env.test
-      
+
       # Lint and type check
       - name: Lint and Type Check
         run: npm run check
-      
+
       # Format check
       - name: Format Check
         run: npm run format:check
-      
+
       # Run tests with basic environment configuration
       - name: Run Tests
         run: npm run test

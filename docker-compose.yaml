@@ -1,4 +1,4 @@
-name: "nomey-next-local"
+version: "3.8"
 
 volumes:
   postgres_data:
@@ -48,7 +48,7 @@ services:
       - "${DOCKER_TOLGEE_PORT:-8080}:8080"
     restart: unless-stopped
 
-  # Redis service
+  # Redis service (commented out)
   # redis:
   #   image: redis:7
   #   container_name: nomey-next-redis

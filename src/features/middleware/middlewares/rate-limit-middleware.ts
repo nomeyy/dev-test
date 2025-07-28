@@ -6,6 +6,8 @@ import { LIMIT_PER_WINDOW, WINDOW_IN_SECONDS } from "../config";
 
 export const rateLimitMiddleware: Middleware = async (req, next) => {
   // Get cached clients for redis and rate limiting
+
+  return await next();
   const redis = await getRedis();
   const limiter = await getRateLimiter(redis, {
     limit: LIMIT_PER_WINDOW,
@@ -19,7 +21,9 @@ export const rateLimitMiddleware: Middleware = async (req, next) => {
     req.headers.get("host")?.toString() ??
     "unknown";
 
+  console.log(ip);
   // Check the rate limit
+
   const { success, limit, remaining, reset } = await limiter.limit(ip);
 
   // Prepare common rate limit headers
