@@ -51,6 +51,7 @@
     "i18next-resources-to-backend": "^1.2.1",
     "lucide-react": "^0.514.0",
     "meilisearch": "^0.51.0",
+    "nanoid": "^5.1.5",
     "next": "15.3.4",
     "next-auth": "5.0.0-beta.25",
     "react": "19.1.0",

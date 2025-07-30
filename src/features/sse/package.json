@@ -1,0 +1,7 @@
+{
+  "name": "@nomey/sse",
+  "version": "0.1.0",
+  "description": "Server-Sent Events feature for real-time notifications",
+  "main": "index.ts",
+  "private": true
+}
