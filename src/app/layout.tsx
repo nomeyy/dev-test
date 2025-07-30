@@ -2,7 +2,7 @@ import "@/styles/globals.css";
 import { getLanguage } from "@/features/i18n";
 
 import { type Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
 
@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const geist = Geist({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-inter",
 });
 
 export default async function RootLayout({
@@ -23,7 +23,7 @@ export default async function RootLayout({
   const language = await getLanguage();
 
   return (
-    <html lang={language} className={`${geist.variable}`}>
+    <html lang={language} className={`${inter.variable}`}>
       <body>
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
