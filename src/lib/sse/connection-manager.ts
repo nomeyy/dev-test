@@ -24,6 +24,9 @@ class SSEConnectionManager {
   private clients = new Map<string, SSEClient>();
   private userClients = new Map<string, Set<string>>(); // userId -> Set of clientIds
   private sessionClients = new Map<string, Set<string>>(); // sessionId -> Set of clientIds
+  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private readonly HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
+  private readonly CLIENT_TIMEOUT_MS = 60000; // 60 seconds
 
   /**
    * Add a new client connection
@@ -225,6 +228,112 @@ class SSEConnectionManager {
   }
 
   /**
+   * Start heartbeat mechanism
+   */
+  startHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      return; // Already running
+    }
+
+    console.log("SSE: Starting heartbeat mechanism");
+    this.heartbeatInterval = setInterval(() => {
+      this.sendHeartbeatToAll();
+      this.cleanupInactiveClients();
+    }, this.HEARTBEAT_INTERVAL_MS);
+  }
+
+  /**
+   * Stop heartbeat mechanism
+   */
+  stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      console.log("SSE: Stopping heartbeat mechanism");
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  /**
+   * Send heartbeat/ping to all connected clients
+   */
+  private sendHeartbeatToAll(): void {
+    const heartbeatMessage: SSEMessage = {
+      type: "heartbeat",
+      data: {
+        message: "ping",
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (const client of this.clients.values()) {
+      if (this.sendMessageToClient(client, heartbeatMessage)) {
+        client.lastPing = new Date();
+        successCount++;
+      } else {
+        failedCount++;
+      }
+    }
+
+    if (this.clients.size > 0) {
+      console.log(
+        `SSE: Heartbeat sent - Success: ${successCount}, Failed: ${failedCount}`,
+      );
+    }
+  }
+
+  /**
+   * Clean up clients that haven't responded to heartbeat
+   */
+  private cleanupInactiveClients(): void {
+    const now = new Date();
+    const inactiveClients: string[] = [];
+
+    for (const [clientId, client] of this.clients.entries()) {
+      const lastActivity = client.lastPing || client.connectedAt;
+      const timeSinceLastActivity = now.getTime() - lastActivity.getTime();
+
+      if (timeSinceLastActivity > this.CLIENT_TIMEOUT_MS) {
+        inactiveClients.push(clientId);
+      }
+    }
+
+    if (inactiveClients.length > 0) {
+      console.log(
+        `SSE: Cleaning up ${inactiveClients.length} inactive clients`,
+      );
+      for (const clientId of inactiveClients) {
+        this.removeClient(clientId);
+      }
+    }
+  }
+
+  /**
+   * Update client's last ping time (called when client responds to heartbeat)
+   */
+  updateClientPing(clientId: string): boolean {
+    const client = this.clients.get(clientId);
+    if (client) {
+      client.lastPing = new Date();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Get heartbeat configuration
+   */
+  getHeartbeatConfig() {
+    return {
+      heartbeatIntervalMs: this.HEARTBEAT_INTERVAL_MS,
+      clientTimeoutMs: this.CLIENT_TIMEOUT_MS,
+      isRunning: this.heartbeatInterval !== null,
+    };
+  }
+
+  /**
    * Generate unique client ID
    */
   generateClientId(): string {
@@ -234,3 +343,6 @@ class SSEConnectionManager {
 
 // Singleton instance
 export const sseConnectionManager = new SSEConnectionManager();
+
+// Start heartbeat when module loads
+sseConnectionManager.startHeartbeat();

@@ -19,6 +19,9 @@ export default function SSETestPage() {
   const [sendMessage, setSendMessage] = useState<string>("");
   const [sendTarget, setSendTarget] = useState<string>("user");
   const [sendTargetId, setSendTargetId] = useState<string>("");
+  const [heartbeatConfig, setHeartbeatConfig] = useState<any>(null);
+  const [lastHeartbeat, setLastHeartbeat] = useState<string>("");
+  const [heartbeatCount, setHeartbeatCount] = useState<number>(0);
 
   const connectToSSE = () => {
     if (eventSource) {
@@ -29,6 +32,9 @@ export default function SSETestPage() {
     setMessages([]);
     setClientId("");
     setConnectionStats(null);
+    setHeartbeatConfig(null);
+    setLastHeartbeat("");
+    setHeartbeatCount(0);
 
     // Build URL with user and session parameters
     const params = new URLSearchParams();
@@ -57,10 +63,20 @@ export default function SSETestPage() {
         // Handle different message types
         if (data.type === "connection" && data.data.clientId) {
           setClientId(data.data.clientId);
+          if (data.data.heartbeat) {
+            setHeartbeatConfig(data.data.heartbeat);
+          }
         }
 
         if (data.type === "stats" && data.data.stats) {
           setConnectionStats(data.data.stats);
+        }
+
+        if (data.type === "heartbeat") {
+          setLastHeartbeat(new Date().toISOString());
+          setHeartbeatCount((prev) => prev + 1);
+          // Don't add heartbeat messages to the main message list to avoid spam
+          return;
         }
 
         // Format message based on type
@@ -317,6 +333,50 @@ export default function SSETestPage() {
         </div>
       </div>
 
+      {/* Heartbeat Information */}
+      {heartbeatConfig && (
+        <div className="mb-6 rounded-lg border bg-purple-50 p-4">
+          <h2 className="mb-3 text-lg font-semibold text-purple-800">
+            Heartbeat Status
+          </h2>
+          <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+            <div>
+              <span className="font-medium text-purple-700">Enabled:</span>
+              <span
+                className={`ml-2 ${
+                  heartbeatConfig.enabled ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {heartbeatConfig.enabled ? "Yes" : "No"}
+              </span>
+            </div>
+            <div>
+              <span className="font-medium text-purple-700">Interval:</span>
+              <span className="ml-2 text-purple-900">
+                {heartbeatConfig.intervalMs / 1000}s
+              </span>
+            </div>
+            <div>
+              <span className="font-medium text-purple-700">Timeout:</span>
+              <span className="ml-2 text-purple-900">
+                {heartbeatConfig.timeoutMs / 1000}s
+              </span>
+            </div>
+            <div>
+              <span className="font-medium text-purple-700">Received:</span>
+              <span className="ml-2 text-purple-900">
+                {heartbeatCount} pings
+              </span>
+            </div>
+          </div>
+          {lastHeartbeat && (
+            <div className="mt-2 text-xs text-purple-600">
+              Last heartbeat: {new Date(lastHeartbeat).toLocaleTimeString()}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Connection Statistics */}
       {connectionStats && (
         <div className="mb-6 rounded-lg border bg-blue-50 p-4">
@@ -378,6 +438,8 @@ export default function SSETestPage() {
           <li>Click "Connect to SSE" to establish connection</li>
           <li>You should see connection confirmation with client ID</li>
           <li>Connection statistics will show after 1 second</li>
+          <li>Heartbeat information will be displayed (purple section)</li>
+          <li>You should see periodic heartbeat pings (every 30 seconds)</li>
           <li>A test message will arrive after 3 seconds</li>
           <li>
             <strong>

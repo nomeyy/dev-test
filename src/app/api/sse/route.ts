@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       sseConnectionManager.addClient(client);
 
       // Send initial connection confirmation with client info
+      const heartbeatConfig = sseConnectionManager.getHeartbeatConfig();
       sseConnectionManager.sendToClient(clientId, {
         type: "connection",
         data: {
@@ -50,6 +51,11 @@ export async function GET(request: NextRequest) {
           userId,
           sessionId,
           connectedAt: client.connectedAt.toISOString(),
+          heartbeat: {
+            intervalMs: heartbeatConfig.heartbeatIntervalMs,
+            timeoutMs: heartbeatConfig.clientTimeoutMs,
+            enabled: heartbeatConfig.isRunning,
+          },
         },
       });
 
