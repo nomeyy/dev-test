@@ -1,47 +1,90 @@
 import { NextRequest } from "next/server";
+import {
+  sseConnectionManager,
+  type SSEClient,
+} from "@/lib/sse/connection-manager";
 
 /**
- * Basic SSE endpoint that accepts client connections and maintains open streams
- * This is the foundation for our real-time notification system
+ * Enhanced SSE endpoint with connection tracking and management
+ * Supports user/session-based client identification and targeted messaging
  */
 export async function GET(request: NextRequest) {
   console.log("SSE: New client connection attempt");
 
+  // Extract user/session info from query params or headers
+  const url = new URL(request.url);
+  const userId = url.searchParams.get("userId") || undefined;
+  const sessionId = url.searchParams.get("sessionId") || undefined;
+
+  // Generate unique client ID
+  const clientId = sseConnectionManager.generateClientId();
+
+  console.log("SSE: Client info", { clientId, userId, sessionId });
+
   // Create a readable stream for SSE
   const stream = new ReadableStream({
     start(controller) {
-      console.log("SSE: Stream started for client");
+      console.log(`SSE: Stream started for client ${clientId}`);
 
-      // Send initial connection confirmation
       const encoder = new TextEncoder();
-      const initialMessage = `data: ${JSON.stringify({
+
+      // Create client object
+      const client: SSEClient = {
+        id: clientId,
+        userId,
+        sessionId,
+        controller,
+        encoder,
+        connectedAt: new Date(),
+      };
+
+      // Add client to connection manager
+      sseConnectionManager.addClient(client);
+
+      // Send initial connection confirmation with client info
+      sseConnectionManager.sendToClient(clientId, {
         type: "connection",
-        message: "Connected to SSE stream",
-        timestamp: new Date().toISOString(),
-      })}\n\n`;
+        data: {
+          message: "Connected to SSE stream",
+          clientId,
+          userId,
+          sessionId,
+          connectedAt: client.connectedAt.toISOString(),
+        },
+      });
 
-      controller.enqueue(encoder.encode(initialMessage));
+      // Send connection stats after 1 second
+      const statsTimeout = setTimeout(() => {
+        const stats = sseConnectionManager.getStats();
+        sseConnectionManager.sendToClient(clientId, {
+          type: "stats",
+          data: {
+            message: "Connection statistics",
+            stats,
+          },
+        });
+      }, 1000);
 
-      // Send a test message after 2 seconds
+      // Send a test message after 3 seconds
       const testTimeout = setTimeout(() => {
-        const testMessage = `data: ${JSON.stringify({
+        sseConnectionManager.sendToClient(clientId, {
           type: "test",
-          message: "This is a test message from the server",
-          timestamp: new Date().toISOString(),
-        })}\n\n`;
-
-        try {
-          controller.enqueue(encoder.encode(testMessage));
-          console.log("SSE: Test message sent to client");
-        } catch (error) {
-          console.error("SSE: Error sending test message:", error);
-        }
-      }, 2000);
+          data: {
+            message: "This is a test message from the server",
+            clientId,
+          },
+        });
+      }, 3000);
 
       // Clean up on close
       request.signal.addEventListener("abort", () => {
-        console.log("SSE: Client disconnected");
+        console.log(`SSE: Client ${clientId} disconnected`);
+        clearTimeout(statsTimeout);
         clearTimeout(testTimeout);
+
+        // Remove client from connection manager
+        sseConnectionManager.removeClient(clientId);
+
         try {
           controller.close();
         } catch (error) {
