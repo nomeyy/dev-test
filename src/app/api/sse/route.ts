@@ -1,113 +1,77 @@
-import { NextRequest } from "next/server";
-import {
-  sseConnectionManager,
-  type SSEClient,
-} from "@/lib/sse/connection-manager";
-
 /**
- * Enhanced SSE endpoint with connection tracking and management
- * Supports user/session-based client identification and targeted messaging
+ * SSE API Endpoint
+ *
+ * This endpoint provides the main SSE connection interface for clients.
+ * It uses the centralized SSE service for all connection management.
  */
+
+import { NextRequest } from "next/server";
+import { sseService } from "@/lib/sse/sse-service";
+import { sseLogger } from "@/lib/sse/logger";
+
 export async function GET(request: NextRequest) {
-  console.log("SSE: New client connection attempt");
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId") || undefined;
+    const sessionId = searchParams.get("sessionId") || undefined;
+    const metadata = {
+      userAgent: request.headers.get("user-agent") || "unknown",
+      ip:
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        "unknown",
+    };
 
-  // Extract user/session info from query params or headers
-  const url = new URL(request.url);
-  const userId = url.searchParams.get("userId") || undefined;
-  const sessionId = url.searchParams.get("sessionId") || undefined;
+    sseLogger.info("SSE API", "New connection request", {
+      userId: userId || "anonymous",
+      sessionId: sessionId || "none",
+      userAgent: metadata.userAgent,
+      ip: metadata.ip,
+    });
 
-  // Generate unique client ID
-  const clientId = sseConnectionManager.generateClientId();
+    // Create connection using centralized service
+    const { clientId, stream } = sseService.createConnection({
+      userId,
+      sessionId,
+      metadata,
+    });
 
-  console.log("SSE: Client info", { clientId, userId, sessionId });
+    sseLogger.info("SSE API", "Connection established", {
+      clientId,
+      userId: userId || "anonymous",
+      sessionId: sessionId || "none",
+    });
 
-  // Create a readable stream for SSE
-  const stream = new ReadableStream({
-    start(controller) {
-      console.log(`SSE: Stream started for client ${clientId}`);
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Cache-Control",
+        "Access-Control-Allow-Methods": "GET",
+        "X-Accel-Buffering": "no", // Disable nginx buffering
+      },
+    });
+  } catch (error) {
+    sseLogger.error(
+      "SSE API",
+      "Failed to create connection",
+      {},
+      error as Error,
+    );
 
-      const encoder = new TextEncoder();
-
-      // Create client object
-      const client: SSEClient = {
-        id: clientId,
-        userId,
-        sessionId,
-        controller,
-        encoder,
-        connectedAt: new Date(),
-      };
-
-      // Add client to connection manager
-      sseConnectionManager.addClient(client);
-
-      // Send initial connection confirmation with client info
-      const heartbeatConfig = sseConnectionManager.getHeartbeatConfig();
-      sseConnectionManager.sendToClient(clientId, {
-        type: "connection",
-        data: {
-          message: "Connected to SSE stream",
-          clientId,
-          userId,
-          sessionId,
-          connectedAt: client.connectedAt.toISOString(),
-          heartbeat: {
-            intervalMs: heartbeatConfig.heartbeatIntervalMs,
-            timeoutMs: heartbeatConfig.clientTimeoutMs,
-            enabled: heartbeatConfig.isRunning,
-          },
+    return new Response(
+      JSON.stringify({
+        error: "Failed to establish SSE connection",
+        message: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
         },
-      });
-
-      // Send connection stats after 1 second
-      const statsTimeout = setTimeout(() => {
-        const stats = sseConnectionManager.getStats();
-        sseConnectionManager.sendToClient(clientId, {
-          type: "stats",
-          data: {
-            message: "Connection statistics",
-            stats,
-          },
-        });
-      }, 1000);
-
-      // Send a test message after 3 seconds
-      const testTimeout = setTimeout(() => {
-        sseConnectionManager.sendToClient(clientId, {
-          type: "test",
-          data: {
-            message: "This is a test message from the server",
-            clientId,
-          },
-        });
-      }, 3000);
-
-      // Clean up on close
-      request.signal.addEventListener("abort", () => {
-        console.log(`SSE: Client ${clientId} disconnected`);
-        clearTimeout(statsTimeout);
-        clearTimeout(testTimeout);
-
-        // Remove client from connection manager
-        sseConnectionManager.removeClient(clientId);
-
-        try {
-          controller.close();
-        } catch (error) {
-          console.error("SSE: Error closing controller:", error);
-        }
-      });
-    },
-  });
-
-  // Return SSE response with proper headers
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Cache-Control",
-    },
-  });
+      },
+    );
+  }
 }

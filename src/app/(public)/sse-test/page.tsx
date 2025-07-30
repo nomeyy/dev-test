@@ -1,144 +1,142 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
-/**
- * Simple test page to verify SSE functionality
- * Shows connection status and displays received messages
- */
+interface SSEEvent {
+  type: string;
+  data: any;
+  timestamp?: string;
+  id?: string;
+}
+
+interface SSEStats {
+  totalClients: number;
+  totalUsers: number;
+  totalSessions: number;
+  uptime: number;
+  heartbeatEnabled: boolean;
+  lastHeartbeat?: Date;
+}
+
 export default function SSETestPage() {
-  const [messages, setMessages] = useState<string[]>([]);
-  const [connectionStatus, setConnectionStatus] = useState<
-    "disconnected" | "connecting" | "connected"
-  >("disconnected");
-  const [eventSource, setEventSource] = useState<EventSource | null>(null);
-  const [userId, setUserId] = useState<string>("user_123");
-  const [sessionId, setSessionId] = useState<string>("session_456");
+  // Connection state
+  const [isConnected, setIsConnected] = useState(false);
   const [clientId, setClientId] = useState<string>("");
-  const [connectionStats, setConnectionStats] = useState<any>(null);
-  const [sendMessage, setSendMessage] = useState<string>("");
-  const [sendTarget, setSendTarget] = useState<string>("user");
-  const [sendTargetId, setSendTargetId] = useState<string>("");
-  const [heartbeatConfig, setHeartbeatConfig] = useState<any>(null);
-  const [lastHeartbeat, setLastHeartbeat] = useState<string>("");
-  const [heartbeatCount, setHeartbeatCount] = useState<number>(0);
+  const [userId, setUserId] = useState("user_123");
+  const [sessionId, setSessionId] = useState("session_456");
 
-  const connectToSSE = () => {
-    if (eventSource) {
-      eventSource.close();
-    }
+  // Events and stats
+  const [events, setEvents] = useState<SSEEvent[]>([]);
+  const [stats, setStats] = useState<SSEStats | null>(null);
+  const [lastEvent, setLastEvent] = useState<SSEEvent | null>(null);
 
-    setConnectionStatus("connecting");
-    setMessages([]);
-    setClientId("");
-    setConnectionStats(null);
-    setHeartbeatConfig(null);
-    setLastHeartbeat("");
-    setHeartbeatCount(0);
+  // Send message form
+  const [sendTarget, setSendTarget] = useState<
+    "client" | "user" | "session" | "broadcast"
+  >("user");
+  const [sendTargetId, setSendTargetId] = useState("user_123");
+  const [sendMessage, setSendMessage] = useState("Hello from SSE test!");
 
-    // Build URL with user and session parameters
+  // Connection management
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const maxEvents = 50; // Limit displayed events
+
+  // Connect to SSE
+  const connect = () => {
+    if (isConnected) return;
+
     const params = new URLSearchParams();
-    if (userId.trim()) params.append("userId", userId.trim());
-    if (sessionId.trim()) params.append("sessionId", sessionId.trim());
+    if (userId.trim()) params.set("userId", userId.trim());
+    if (sessionId.trim()) params.set("sessionId", sessionId.trim());
 
-    const sseUrl = `/api/sse${params.toString() ? `?${params.toString()}` : ""}`;
-    console.log("Connecting to:", sseUrl);
+    const url = `/api/sse?${params.toString()}`;
+    const eventSource = new EventSource(url);
+    eventSourceRef.current = eventSource;
 
-    const newEventSource = new EventSource(sseUrl);
-
-    newEventSource.onopen = () => {
-      console.log("SSE: Connection opened");
-      setConnectionStatus("connected");
-      setMessages((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] Connected to SSE stream`,
-      ]);
+    eventSource.onopen = () => {
+      setIsConnected(true);
+      addEvent({
+        type: "connection",
+        data: { message: "Connected to SSE stream" },
+        timestamp: new Date().toISOString(),
+      });
     };
 
-    newEventSource.onmessage = (event) => {
-      console.log("SSE: Message received:", event.data);
+    eventSource.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const sseEvent: SSEEvent = JSON.parse(event.data);
+        addEvent(sseEvent);
+        setLastEvent(sseEvent);
 
-        // Handle different message types
-        if (data.type === "connection" && data.data.clientId) {
-          setClientId(data.data.clientId);
-          if (data.data.heartbeat) {
-            setHeartbeatConfig(data.data.heartbeat);
-          }
+        // Extract client ID from connection event
+        if (sseEvent.type === "system:connected" && sseEvent.data.clientId) {
+          setClientId(sseEvent.data.clientId);
         }
 
-        if (data.type === "stats" && data.data.stats) {
-          setConnectionStats(data.data.stats);
+        // Update stats if available
+        if (sseEvent.data.stats) {
+          setStats(sseEvent.data.stats);
         }
-
-        if (data.type === "heartbeat") {
-          setLastHeartbeat(new Date().toISOString());
-          setHeartbeatCount((prev) => prev + 1);
-          // Don't add heartbeat messages to the main message list to avoid spam
-          return;
-        }
-
-        // Format message based on type
-        let messageText = "";
-        if (data.data && typeof data.data === "object") {
-          if (data.data.message) {
-            messageText = `${data.type}: ${data.data.message}`;
-          } else {
-            messageText = `${data.type}: ${JSON.stringify(data.data)}`;
-          }
-        } else {
-          messageText = `${data.type}: ${data.data || "No data"}`;
-        }
-
-        setMessages((prev) => [
-          ...prev,
-          `[${new Date().toLocaleTimeString()}] ${messageText}`,
-        ]);
       } catch (error) {
-        setMessages((prev) => [
-          ...prev,
-          `[${new Date().toLocaleTimeString()}] Raw: ${event.data}`,
-        ]);
+        console.error("Error parsing SSE event:", error);
+        addEvent({
+          type: "error",
+          data: { message: "Failed to parse event", error: event.data },
+          timestamp: new Date().toISOString(),
+        });
       }
     };
 
-    newEventSource.onerror = (error) => {
-      console.error("SSE: Error occurred:", error);
-      setConnectionStatus("disconnected");
-      setMessages((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] Error: Connection failed`,
-      ]);
+    eventSource.onerror = (error) => {
+      console.error("SSE connection error:", error);
+      addEvent({
+        type: "error",
+        data: { message: "Connection error occurred" },
+        timestamp: new Date().toISOString(),
+      });
+      disconnect();
     };
-
-    setEventSource(newEventSource);
   };
 
-  const disconnectFromSSE = () => {
-    if (eventSource) {
-      eventSource.close();
-      setEventSource(null);
+  // Disconnect from SSE
+  const disconnect = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
     }
-    setConnectionStatus("disconnected");
+    setIsConnected(false);
+    setClientId("");
+    addEvent({
+      type: "connection",
+      data: { message: "Disconnected from SSE stream" },
+      timestamp: new Date().toISOString(),
+    });
   };
 
+  // Add event to list
+  const addEvent = (event: SSEEvent) => {
+    setEvents((prev) => {
+      const newEvents = [event, ...prev];
+      return newEvents.slice(0, maxEvents);
+    });
+  };
+
+  // Send test message
   const sendTestMessage = async () => {
-    if (!sendMessage.trim()) {
-      alert("Please enter a message to send");
-      return;
-    }
+    if (!sendMessage.trim()) return;
 
     try {
       const payload = {
         target: sendTarget,
-        targetId:
-          sendTarget === "broadcast"
-            ? undefined
-            : sendTargetId.trim() ||
-              (sendTarget === "user" ? userId : sessionId),
-        message: sendMessage.trim(),
-        type: "test_message",
+        targetId: sendTarget === "broadcast" ? undefined : sendTargetId,
+        event: {
+          type: "test_message",
+          data: {
+            message: sendMessage,
+            sentBy: "SSE Test UI",
+            timestamp: new Date().toISOString(),
+          },
+        },
       };
 
       const response = await fetch("/api/sse/send", {
@@ -152,316 +150,309 @@ export default function SSETestPage() {
       const result = await response.json();
 
       if (result.success) {
-        alert(
-          `Message sent successfully! Delivered to ${result.sentCount} client(s)`,
-        );
+        addEvent({
+          type: "send_result",
+          data: {
+            message: `Message sent successfully! Delivered to ${result.sentCount} client(s)`,
+            result,
+          },
+          timestamp: new Date().toISOString(),
+        });
         setSendMessage("");
       } else {
-        alert(`Error: ${result.error}`);
+        addEvent({
+          type: "send_error",
+          data: {
+            message: `Send failed: ${result.error}`,
+            result,
+          },
+          timestamp: new Date().toISOString(),
+        });
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("Error sending message. Check console for details.");
+      addEvent({
+        type: "send_error",
+        data: {
+          message: "Network error while sending message",
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+        timestamp: new Date().toISOString(),
+      });
     }
   };
 
+  // Clear events
+  const clearEvents = () => {
+    setEvents([]);
+    setLastEvent(null);
+  };
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (eventSource) {
-        eventSource.close();
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
       }
     };
-  }, [eventSource]);
+  }, []);
 
-  const getStatusColor = () => {
-    switch (connectionStatus) {
-      case "connected":
-        return "text-green-600";
-      case "connecting":
-        return "text-yellow-600";
-      case "disconnected":
-        return "text-red-600";
+  // Format timestamp
+  const formatTime = (timestamp?: string) => {
+    if (!timestamp) return "";
+    return new Date(timestamp).toLocaleTimeString();
+  };
+
+  // Get event color based on type
+  const getEventColor = (type: string) => {
+    switch (type) {
+      case "system:connected":
+      case "connection":
+        return "text-green-600 bg-green-50";
+      case "system:heartbeat":
+        return "text-blue-600 bg-blue-50";
+      case "error":
+      case "send_error":
+        return "text-red-600 bg-red-50";
+      case "test_message":
+        return "text-purple-600 bg-purple-50";
+      case "send_result":
+        return "text-green-600 bg-green-50";
+      default:
+        return "text-gray-600 bg-gray-50";
     }
   };
 
   return (
-    <div className="container mx-auto max-w-4xl p-8">
-      <h1 className="mb-6 text-3xl font-bold">SSE Test Page</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+      <div className="mx-auto max-w-6xl">
+        <div className="rounded-2xl bg-white/10 p-8 text-white shadow-2xl backdrop-blur-lg">
+          <h1 className="mb-8 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-center text-4xl font-bold text-transparent">
+            SSE Test Dashboard
+          </h1>
 
-      <div className="mb-6">
-        <div className="mb-4 flex items-center gap-4">
-          <span className="text-lg">Status:</span>
-          <span className={`font-semibold ${getStatusColor()}`}>
-            {connectionStatus.toUpperCase()}
-          </span>
-          {clientId && (
-            <span className="text-sm text-gray-500">Client ID: {clientId}</span>
-          )}
-        </div>
-
-        {/* Connection Parameters */}
-        <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              User ID (optional)
-            </label>
-            <input
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              disabled={connectionStatus === "connected"}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:bg-gray-100"
-              placeholder="e.g., user_123"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Session ID (optional)
-            </label>
-            <input
-              type="text"
-              value={sessionId}
-              onChange={(e) => setSessionId(e.target.value)}
-              disabled={connectionStatus === "connected"}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:bg-gray-100"
-              placeholder="e.g., session_456"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-4">
-          <button
-            onClick={connectToSSE}
-            disabled={connectionStatus === "connecting"}
-            className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
-          >
-            {connectionStatus === "connecting"
-              ? "Connecting..."
-              : "Connect to SSE"}
-          </button>
-
-          <button
-            onClick={disconnectFromSSE}
-            disabled={connectionStatus === "disconnected"}
-            className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600 disabled:opacity-50"
-          >
-            Disconnect
-          </button>
-        </div>
-      </div>
-
-      {/* Message Sending Controls */}
-      <div className="mb-6 rounded-lg border bg-green-50 p-4">
-        <h2 className="mb-3 text-lg font-semibold text-green-800">
-          Send Test Messages
-        </h2>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div>
-            <label className="block text-sm font-medium text-green-700">
-              Target Type
-            </label>
-            <select
-              value={sendTarget}
-              onChange={(e) => {
-                setSendTarget(e.target.value);
-                // Auto-fill targetId based on selection
-                if (e.target.value === "user") {
-                  setSendTargetId(userId);
-                } else if (e.target.value === "session") {
-                  setSendTargetId(sessionId);
-                } else if (e.target.value === "client") {
-                  setSendTargetId(clientId);
-                } else {
-                  setSendTargetId("");
-                }
-              }}
-              className="mt-1 block w-full rounded-md border border-green-300 px-3 py-2 text-sm text-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 focus:outline-none disabled:bg-gray-100"
-            >
-              <option value="user">To User</option>
-              <option value="session">To Session</option>
-              <option value="client">To Specific Client</option>
-              <option value="broadcast">Broadcast to All</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-green-700">
-              Target ID {sendTarget === "broadcast" ? "(not needed)" : ""}
-            </label>
-            <input
-              type="text"
-              value={sendTargetId}
-              onChange={(e) => setSendTargetId(e.target.value)}
-              disabled={sendTarget === "broadcast"}
-              className="mt-1 block w-full rounded-md border border-green-300 px-3 py-2 text-sm text-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 focus:outline-none disabled:bg-gray-100"
-              placeholder={
-                sendTarget === "user"
-                  ? "User ID"
-                  : sendTarget === "session"
-                    ? "Session ID"
-                    : sendTarget === "client"
-                      ? "Client ID"
-                      : ""
-              }
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-green-700">
-              Message
-            </label>
-            <input
-              type="text"
-              value={sendMessage}
-              onChange={(e) => setSendMessage(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-green-300 px-3 py-2 text-sm text-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 focus:outline-none disabled:bg-gray-100"
-              placeholder="Enter your test message"
-              onKeyPress={(e) => e.key === "Enter" && sendTestMessage()}
-            />
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <button
-            onClick={sendTestMessage}
-            disabled={!sendMessage.trim()}
-            className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600 disabled:opacity-50"
-          >
-            Send Message
-          </button>
-        </div>
-      </div>
-
-      {/* Heartbeat Information */}
-      {heartbeatConfig && (
-        <div className="mb-6 rounded-lg border bg-purple-50 p-4">
-          <h2 className="mb-3 text-lg font-semibold text-purple-800">
-            Heartbeat Status
-          </h2>
-          <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-            <div>
-              <span className="font-medium text-purple-700">Enabled:</span>
-              <span
-                className={`ml-2 ${
-                  heartbeatConfig.enabled ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {heartbeatConfig.enabled ? "Yes" : "No"}
-              </span>
-            </div>
-            <div>
-              <span className="font-medium text-purple-700">Interval:</span>
-              <span className="ml-2 text-purple-900">
-                {heartbeatConfig.intervalMs / 1000}s
-              </span>
-            </div>
-            <div>
-              <span className="font-medium text-purple-700">Timeout:</span>
-              <span className="ml-2 text-purple-900">
-                {heartbeatConfig.timeoutMs / 1000}s
-              </span>
-            </div>
-            <div>
-              <span className="font-medium text-purple-700">Received:</span>
-              <span className="ml-2 text-purple-900">
-                {heartbeatCount} pings
-              </span>
-            </div>
-          </div>
-          {lastHeartbeat && (
-            <div className="mt-2 text-xs text-purple-600">
-              Last heartbeat: {new Date(lastHeartbeat).toLocaleTimeString()}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Connection Statistics */}
-      {connectionStats && (
-        <div className="mb-6 rounded-lg border bg-blue-50 p-4">
-          <h2 className="mb-3 text-lg font-semibold text-blue-800">
-            Connection Statistics
-          </h2>
-          <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
-            <div>
-              <span className="font-medium text-blue-700">Total Clients:</span>
-              <span className="ml-2 text-blue-900">
-                {connectionStats.totalClients}
-              </span>
-            </div>
-            <div>
-              <span className="font-medium text-blue-700">Total Users:</span>
-              <span className="ml-2 text-blue-900">
-                {connectionStats.totalUsers}
-              </span>
-            </div>
-            <div>
-              <span className="font-medium text-blue-700">Total Sessions:</span>
-              <span className="ml-2 text-blue-900">
-                {connectionStats.totalSessions}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="rounded-lg border bg-gray-50 p-4">
-        <h2 className="mb-4 text-xl font-semibold text-gray-600 shadow-sm">
-          Messages ({messages.length})
-        </h2>
-
-        {messages.length === 0 ? (
-          <p className="text-gray-500 italic">
-            No messages received yet. Click "Connect to SSE" to start.
-          </p>
-        ) : (
-          <div className="max-h-96 space-y-2 overflow-y-auto">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className="rounded border bg-white p-2 font-mono text-sm text-gray-600 shadow-sm"
-              >
-                {message}
+          {/* Connection Status */}
+          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="rounded-xl bg-white/5 p-6">
+              <h2 className="mb-4 text-xl font-semibold">Connection Status</h2>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`h-3 w-3 rounded-full ${isConnected ? "bg-green-400" : "bg-red-400"}`}
+                  ></div>
+                  <span className="font-medium">
+                    {isConnected ? "Connected" : "Disconnected"}
+                  </span>
+                </div>
+                {clientId && (
+                  <div className="text-sm text-gray-300">
+                    Client ID:{" "}
+                    <code className="rounded bg-white/10 px-2 py-1">
+                      {clientId}
+                    </code>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
 
-      <div className="mt-6 text-sm text-gray-600">
-        <p>
-          <strong>How to test connection tracking and messaging:</strong>
-        </p>
-        <ol className="mt-2 list-inside list-decimal space-y-1">
-          <li>Enter optional User ID and Session ID before connecting</li>
-          <li>Click "Connect to SSE" to establish connection</li>
-          <li>You should see connection confirmation with client ID</li>
-          <li>Connection statistics will show after 1 second</li>
-          <li>Heartbeat information will be displayed (purple section)</li>
-          <li>You should see periodic heartbeat pings (every 30 seconds)</li>
-          <li>A test message will arrive after 3 seconds</li>
-          <li>
-            <strong>
-              Use "Send Test Messages" section to test targeted messaging:
-            </strong>
-            <ul className="mt-1 ml-4 list-inside list-disc space-y-1">
-              <li>Send to specific user (will reach all their clients)</li>
-              <li>
-                Send to specific session (will reach all clients in that
-                session)
-              </li>
-              <li>Send to specific client ID (will reach only that client)</li>
-              <li>Broadcast to all connected clients</li>
-            </ul>
-          </li>
-          <li>
-            Open multiple browser tabs with different User/Session IDs to test
-            multi-client scenarios
-          </li>
-          <li>Check browser dev tools Network tab to see the SSE stream</li>
-          <li>Click "Disconnect" to close the connection</li>
-        </ol>
+            <div className="rounded-xl bg-white/5 p-6">
+              <h2 className="mb-4 text-xl font-semibold">Latest Event</h2>
+              {lastEvent ? (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-blue-300">
+                    {lastEvent.type}
+                  </div>
+                  <div className="truncate text-xs text-gray-300">
+                    {JSON.stringify(lastEvent.data).substring(0, 50)}...
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {formatTime(lastEvent.timestamp)}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-400">No events yet</div>
+              )}
+            </div>
+
+            <div className="rounded-xl bg-white/5 p-6">
+              <h2 className="mb-4 text-xl font-semibold">Server Stats</h2>
+              {stats ? (
+                <div className="space-y-2 text-sm">
+                  <div>
+                    Clients:{" "}
+                    <span className="font-medium">{stats.totalClients}</span>
+                  </div>
+                  <div>
+                    Users:{" "}
+                    <span className="font-medium">{stats.totalUsers}</span>
+                  </div>
+                  <div>
+                    Sessions:{" "}
+                    <span className="font-medium">{stats.totalSessions}</span>
+                  </div>
+                  <div>
+                    Uptime:{" "}
+                    <span className="font-medium">
+                      {Math.round(stats.uptime / 1000)}s
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-400">No stats available</div>
+              )}
+            </div>
+          </div>
+
+          {/* Connection Controls */}
+          <div className="mb-8 rounded-xl bg-white/5 p-6">
+            <h2 className="mb-4 text-xl font-semibold">Connection Controls</h2>
+            <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  User ID
+                </label>
+                <input
+                  type="text"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  disabled={isConnected}
+                  className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-gray-400 disabled:opacity-50"
+                  placeholder="e.g., user_123"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Session ID
+                </label>
+                <input
+                  type="text"
+                  value={sessionId}
+                  onChange={(e) => setSessionId(e.target.value)}
+                  disabled={isConnected}
+                  className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-gray-400 disabled:opacity-50"
+                  placeholder="e.g., session_456"
+                />
+              </div>
+              <div className="flex items-end gap-2">
+                <button
+                  onClick={connect}
+                  disabled={isConnected}
+                  className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700 disabled:bg-gray-600 disabled:opacity-50"
+                >
+                  Connect
+                </button>
+                <button
+                  onClick={disconnect}
+                  disabled={!isConnected}
+                  className="flex-1 rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700 disabled:bg-gray-600 disabled:opacity-50"
+                >
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Send Message */}
+          <div className="mb-8 rounded-xl bg-white/5 p-6">
+            <h2 className="mb-4 text-xl font-semibold">Send Test Message</h2>
+            <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium">Target</label>
+                <select
+                  value={sendTarget}
+                  onChange={(e) => setSendTarget(e.target.value as any)}
+                  className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white"
+                >
+                  <option value="user">To User</option>
+                  <option value="session">To Session</option>
+                  <option value="client">To Client</option>
+                  <option value="broadcast">Broadcast All</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Target ID
+                </label>
+                <input
+                  type="text"
+                  value={sendTargetId}
+                  onChange={(e) => setSendTargetId(e.target.value)}
+                  disabled={sendTarget === "broadcast"}
+                  className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-gray-400 disabled:opacity-50"
+                  placeholder={
+                    sendTarget === "client"
+                      ? "Client ID"
+                      : sendTarget === "user"
+                        ? "User ID"
+                        : "Session ID"
+                  }
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Message
+                </label>
+                <input
+                  type="text"
+                  value={sendMessage}
+                  onChange={(e) => setSendMessage(e.target.value)}
+                  className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-gray-400"
+                  placeholder="Enter your message"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={sendTestMessage}
+                  disabled={!sendMessage.trim()}
+                  className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50"
+                >
+                  Send Message
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Events Log */}
+          <div className="rounded-xl bg-white/5 p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold">
+                Events Log ({events.length})
+              </h2>
+              <button
+                onClick={clearEvents}
+                className="rounded bg-gray-600 px-3 py-1 text-sm text-white transition-colors hover:bg-gray-700"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="max-h-96 space-y-2 overflow-y-auto">
+              {events.length === 0 ? (
+                <div className="py-8 text-center text-gray-400">
+                  No events yet. Connect to SSE to start receiving events.
+                </div>
+              ) : (
+                events.map((event, index) => (
+                  <div
+                    key={index}
+                    className={`rounded-lg border p-3 ${getEventColor(event.type)}`}
+                  >
+                    <div className="mb-2 flex items-start justify-between">
+                      <span className="text-sm font-medium">{event.type}</span>
+                      <span className="text-xs opacity-70">
+                        {formatTime(event.timestamp)}
+                      </span>
+                    </div>
+                    <div className="text-sm opacity-90">
+                      <pre className="text-xs whitespace-pre-wrap">
+                        {JSON.stringify(event.data, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
