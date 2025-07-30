@@ -1,4 +1,6 @@
 import { Button } from "@/shared/components/ui/button";
+import Link from "next/link";
+import { paths } from "@/config/routes";
 
 const WelcomeMessage = ({
   name,
@@ -13,7 +15,12 @@ const WelcomeMessage = ({
         Welcome <span className="text-[hsl(280,100%,70%)]">{name}</span>!
       </h1>
       <div className="flex flex-col items-center gap-2">
-        <Button onClick={signOut}>{"Sign out"}</Button>
+        <div className="flex gap-4">
+          <Link href={paths.sseDemoPage}>
+            <Button variant="outline">SSE Demo</Button>
+          </Link>
+          <Button onClick={signOut}>Sign out</Button>
+        </div>
       </div>
     </>
   );
