@@ -18,25 +18,66 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       // Upload-related events
       case "video.upload.created":
-      case "video.upload.asset_created":
-      case "video.upload.cancelled":
-      case "video.upload.errored":
-        // TODO: Handle upload events
         console.info(`Upload event: ${event.type}`, event.data);
+        // TODO: Extract user ID from upload metadata and send progress update
+        // await sendVideoUploadProgress(userId, event.data.id, 0, "uploading");
+        break;
+
+      case "video.upload.asset_created":
+        console.info(`Upload event: ${event.type}`, event.data);
+        // TODO: Send upload progress update
+        // await sendVideoUploadProgress(userId, event.data.upload_id, 50, "processing");
+        break;
+
+      case "video.upload.cancelled":
+        console.info(`Upload event: ${event.type}`, event.data);
+        // TODO: Notify user of cancellation
+        // await sendNotificationToUsers(userId, "Video upload was cancelled", "warning");
+        break;
+
+      case "video.upload.errored":
+        console.info(`Upload event: ${event.type}`, event.data);
+        // TODO: Notify user of upload error
+        // await sendNotificationToUsers(userId, `Video upload failed: ${event.data.error?.message || 'Unknown error'}`, "error");
         break;
 
       // Asset-related events
       case "video.asset.created":
+        console.info(`Asset event: ${event.type}`, event.data);
+        // TODO: Send asset creation notification
+        // await sendVideoUploadProgress(userId, uploadId, 75, "processing");
+        break;
+
       case "video.asset.updated":
+        console.info(`Asset event: ${event.type}`, event.data);
+        break;
+
       case "video.asset.ready":
-        // TODO: Handle asset ready for playback
         console.info(`Asset ready event: ${event.type}`, event.data);
+        // TODO: Extract user ID and send video ready notification
+        // const assetData = event.data;
+        // await sendVideoReady(userId, assetData.id, {
+        //   title: assetData.master?.name,
+        //   duration: assetData.duration,
+        //   playbackUrl: assetData.playback_ids?.[0]?.id
+        //     ? `https://stream.mux.com/${assetData.playback_ids[0].id}.m3u8`
+        //     : undefined,
+        //   thumbnailUrl: assetData.playback_ids?.[0]?.id
+        //     ? `https://image.mux.com/${assetData.playback_ids[0].id}/thumbnail.jpg`
+        //     : undefined,
+        // });
         break;
 
       case "video.asset.deleted":
-      case "video.asset.errored":
-        // TODO: Handle asset problems
         console.info(`Asset issue event: ${event.type}`, event.data);
+        // TODO: Notify user of asset deletion
+        // await sendNotificationToUsers(userId, "Video has been deleted", "info");
+        break;
+
+      case "video.asset.errored":
+        console.info(`Asset issue event: ${event.type}`, event.data);
+        // TODO: Notify user of asset processing error
+        // await sendNotificationToUsers(userId, `Video processing failed: ${event.data.error?.message || 'Unknown error'}`, "error");
         break;
 
       // For any unhandled event types

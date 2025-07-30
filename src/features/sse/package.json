@@ -1,0 +1,6 @@
+{
+  "name": "@features/sse",
+  "exports": {
+    ".": "./index.ts"
+  }
+}
