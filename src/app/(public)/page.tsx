@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { paths } from "@/config/routes";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
 
@@ -14,12 +15,21 @@ const LandingPage = () => (
       <ServerComponent />
     </div>
 
-    <Link
-      href={"/api/auth/signin"}
-      className={`rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20`}
-    >
-      {"Sign in"}
-    </Link>
+    <div className="flex gap-4">
+      <Link
+        href={"/api/auth/signin"}
+        className={`rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20`}
+      >
+        {"Sign in"}
+      </Link>
+
+      <Link
+        href={paths.sseTestPage}
+        className={`rounded-full bg-blue-500/20 px-10 py-3 font-semibold no-underline transition hover:bg-blue-500/30`}
+      >
+        {"Test SSE"}
+      </Link>
+    </div>
   </>
 );
 
