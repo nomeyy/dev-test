@@ -116,12 +116,12 @@ export const BroadcastDashboard = () => {
           <span className="font-semibold text-white">Status:</span>
           <span
             className={
-              status === "connected"
+              status === EVENT_TYPES.CONNECTED
                 ? "flex animate-pulse items-center gap-1 font-bold text-green-300"
                 : "flex animate-pulse items-center gap-1 font-bold text-red-400"
             }
           >
-            {status === "connected" ? (
+            {status === EVENT_TYPES.CONNECTED ? (
               <CheckCircle size={16} />
             ) : (
               <XCircle size={16} />

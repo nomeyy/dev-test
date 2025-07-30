@@ -1,5 +1,6 @@
 import type { SSEClient, SSEEvent } from "@/types/sse";
 import { v4 as uuidv4 } from "uuid";
+import { EVENT_TYPES } from "@/utils/constants";
 
 // Module-level state (equivalent to private class properties)
 const clients = new Map<string, SSEClient>();
@@ -15,12 +16,12 @@ const formatEvent = (event: SSEEvent): Uint8Array => {
 
 const broadcastClients = () => {
   const clientIds = Array.from(clients.keys());
-  broadcast({ event: "clients", data: { clients: clientIds } });
+  broadcast({ event: EVENT_TYPES.CLIENTS, data: { clients: clientIds } });
 };
 
 const ensureHeartbeat = () => {
   heartbeatInterval ??= setInterval(() => {
-    broadcast({ event: "ping", data: {} });
+    broadcast({ event: EVENT_TYPES.PING, data: {} });
   }, 3000);
 };
 
@@ -31,9 +32,11 @@ export const addClient = (
 ): string => {
   const id = uuidv4();
   clients.set(id, { id, controller, userId });
-  controller.enqueue(formatEvent({ event: "connected", data: { id } }));
+  controller.enqueue(
+    formatEvent({ event: EVENT_TYPES.CONNECTED, data: { id } }),
+  );
   broadcastClients();
-  broadcast({ event: "client-connect", data: { id } });
+  broadcast({ event: EVENT_TYPES.CLIENT_CONNECT, data: { id } });
   ensureHeartbeat();
   return id;
 };
@@ -42,7 +45,7 @@ export const addAdmin = (controller: ReadableStreamDefaultController) => {
   adminControllers.add(controller);
   controller.enqueue(
     formatEvent({
-      event: "clients",
+      event: EVENT_TYPES.CLIENTS,
       data: { clients: getActiveClients() },
     }),
   );
@@ -56,7 +59,7 @@ export const removeClient = (id: string) => {
       client.controller.close();
     } catch {}
     broadcastClients();
-    broadcast({ event: "client-disconnect", data: { id } });
+    broadcast({ event: EVENT_TYPES.CLIENT_DISCONNECT, data: { id } });
   }
   if (clients.size === 0 && heartbeatInterval) {
     clearInterval(heartbeatInterval);
@@ -81,7 +84,7 @@ export const sendToClient = (id: string, event: SSEEvent): boolean => {
 export const broadcast = (event: SSEEvent, excludeId?: string): number => {
   let count = 0;
   // If event is a broadcast with clientId, send to that client and all admins
-  if (event.event === "broadcast" && event.data.clientId) {
+  if (event.event === EVENT_TYPES.BROADCAST && event.data.clientId) {
     const clientId = event.data.clientId;
     if (typeof clientId === "string") {
       // Send to the specific client

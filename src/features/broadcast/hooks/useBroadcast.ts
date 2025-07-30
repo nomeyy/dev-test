@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSSE } from "../../sse/hooks/useSSE";
+import { EVENT_TYPES } from "@/utils/constants";
 
 export function useBroadcast() {
   const { events, status, clientId, reset } = useSSE("/api/sse?admin=1");
@@ -11,7 +12,7 @@ export function useBroadcast() {
   const clients = useMemo(() => {
     const lastClientsEvent = [...events]
       .reverse()
-      .find((e) => e.event === "clients");
+      .find((e) => e.event === EVENT_TYPES.CLIENTS);
     return lastClientsEvent &&
       "clients" in lastClientsEvent.data &&
       Array.isArray((lastClientsEvent.data as { clients: unknown }).clients)
@@ -28,9 +29,9 @@ export function useBroadcast() {
       events
         .filter(
           (e) =>
-            e.event === "broadcast" ||
-            e.event === "client-connect" ||
-            e.event === "client-disconnect",
+            e.event === EVENT_TYPES.BROADCAST ||
+            e.event === EVENT_TYPES.CLIENT_CONNECT ||
+            e.event === EVENT_TYPES.CLIENT_DISCONNECT,
         )
         .reverse(),
     [events],
@@ -41,7 +42,7 @@ export function useBroadcast() {
     await fetch("/api/sse-broadcast", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event: "broadcast", data: { message } }),
+      body: JSON.stringify({ event: EVENT_TYPES.BROADCAST, data: { message } }),
     });
     setSendStatus("Broadcast sent!");
     setMessage("");
@@ -53,7 +54,7 @@ export function useBroadcast() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        event: "broadcast",
+        event: EVENT_TYPES.BROADCAST,
         data: { message, clientId: targetClient },
       }),
     });

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSSE } from "../../../features/sse/hooks/useSSE";
 import type { LogEntry } from "@/types/sse";
+import { EVENT_TYPES, MESSAGE_TYPES } from "@/utils/constants";
 
 export function useHome() {
   const [reconnectKey, setReconnectKey] = useState(0);
@@ -17,7 +18,11 @@ export function useHome() {
 
   const handleDisconnect = () => {
     setLogs((prev) => [
-      { type: "status", text: "You are disconnected", timestamp: Date.now() },
+      {
+        type: MESSAGE_TYPES.STATUS,
+        text: "You are disconnected",
+        timestamp: Date.now(),
+      },
       ...prev,
     ]);
     hasConnectedLog.current = false;
@@ -27,7 +32,11 @@ export function useHome() {
     setManuallyDisconnected(false);
     setReconnectKey((k) => k + 1);
     setLogs((prev) => [
-      { type: "status", text: "You are connected", timestamp: Date.now() },
+      {
+        type: MESSAGE_TYPES.STATUS,
+        text: "You are connected",
+        timestamp: Date.now(),
+      },
       ...prev,
     ]);
     hasConnectedLog.current = true;
@@ -35,7 +44,9 @@ export function useHome() {
 
   // Pulse the heartbeat dot on every ping
   useEffect(() => {
-    const lastPingEvent = [...events].reverse().find((e) => e.event === "ping");
+    const lastPingEvent = [...events]
+      .reverse()
+      .find((e) => e.event === EVENT_TYPES.PING);
     if (lastPingEvent) {
       setHeartbeat((h) => h + 1);
     }
@@ -47,22 +58,28 @@ export function useHome() {
     // Add 'You are connected' log on 'connected' or first 'ping' event
     const lastConnect = [...events]
       .reverse()
-      .find((e) => e.event === "connected");
-    const lastPing = [...events].reverse().find((e) => e.event === "ping");
+      .find((e) => e.event === EVENT_TYPES.CONNECTED);
+    const lastPing = [...events]
+      .reverse()
+      .find((e) => e.event === EVENT_TYPES.PING);
     if (
       (lastConnect || lastPing) &&
-      status === "connected" &&
+      status === EVENT_TYPES.CONNECTED &&
       !hasConnectedLog.current
     ) {
       setLogs((prev) => [
-        { type: "status", text: "You are connected", timestamp: Date.now() },
+        {
+          type: MESSAGE_TYPES.STATUS,
+          text: "You are connected",
+          timestamp: Date.now(),
+        },
         ...prev,
       ]);
       hasConnectedLog.current = true;
     }
     const lastDisconnect = [...events]
       .reverse()
-      .find((e) => e.event === "client-disconnect");
+      .find((e) => e.event === EVENT_TYPES.CLIENT_DISCONNECT);
     if (
       lastDisconnect &&
       typeof lastDisconnect.data === "object" &&
@@ -71,7 +88,11 @@ export function useHome() {
       (lastDisconnect.data as { id: string }).id === clientId
     ) {
       setLogs((prev) => [
-        { type: "status", text: "You are disconnected", timestamp: Date.now() },
+        {
+          type: MESSAGE_TYPES.STATUS,
+          text: "You are disconnected",
+          timestamp: Date.now(),
+        },
         ...prev,
       ]);
       hasConnectedLog.current = false;
@@ -88,7 +109,7 @@ export function useHome() {
             ? (e.data as { clientId?: string })
             : {};
         return (
-          e.event === "broadcast" &&
+          e.event === EVENT_TYPES.BROADCAST &&
           (!data.clientId || data.clientId === clientId)
         );
       })
@@ -98,7 +119,7 @@ export function useHome() {
             ? (e.data as { message?: string; clientId?: string })
             : {};
         return {
-          type: "broadcast" as const,
+          type: MESSAGE_TYPES.BROADCAST,
           message: data.message ?? "",
           isTargeted: !!data.clientId,
           timestamp: Date.now(),
@@ -108,8 +129,8 @@ export function useHome() {
     setLogs((prev) => {
       const existing = new Set(
         prev
-          .filter((l) => l.type === "broadcast")
-          .map((l) => (l.type === "broadcast" ? l.message : "")),
+          .filter((l) => l.type === MESSAGE_TYPES.BROADCAST)
+          .map((l) => (l.type === MESSAGE_TYPES.BROADCAST ? l.message : "")),
       );
       const toAdd = newBroadcasts.filter((b) => !existing.has(b.message));
       return [...toAdd, ...prev];

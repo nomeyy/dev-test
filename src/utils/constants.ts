@@ -5,15 +5,27 @@ import type {
 } from "@/types/sse";
 
 export const EVENT_TYPES = {
+  CLIENTS: "clients",
   BROADCAST: "broadcast",
   CLIENT_CONNECT: "client-connect",
   CLIENT_DISCONNECT: "client-disconnect",
+  CONNECTED: "connected",
+  DISCONNECTED: "disconnected",
+  PING: "ping",
 } as const;
 
 export const MESSAGE_TYPES = {
   STATUS: "status",
   TARGETED: "targeted",
   BROADCAST: "broadcast",
+} as const;
+
+export const ICON_TYPES = {
+  USER: "user",
+  MEGAPHONE: "megaphone",
+  CHECK_CIRCLE: "check-circle",
+  X_CIRCLE: "x-circle",
+  RADIO: "radio",
 } as const;
 
 export const getEventConfig = (
@@ -26,7 +38,7 @@ export const getEventConfig = (
         return {
           label: `Direct to ${data.clientId.slice(0, 6)}`,
           color: "#b266ff",
-          iconType: "user",
+          iconType: ICON_TYPES.USER,
           bubbleClass:
             "bg-gradient-to-r from-[#b266ff]/30 to-[#4f8cff]/30 border-[#b266ff]/30",
         };
@@ -34,7 +46,7 @@ export const getEventConfig = (
         return {
           label: "Broadcast to all",
           color: "#4f8cff",
-          iconType: "megaphone",
+          iconType: ICON_TYPES.MEGAPHONE,
           bubbleClass:
             "bg-gradient-to-r from-[#4f8cff]/30 to-[#b266ff]/30 border-[#4f8cff]/30",
         };
@@ -44,7 +56,7 @@ export const getEventConfig = (
       return {
         label: `Client connected: ${data.id?.slice(0, 6)}`,
         color: "#ffd700",
-        iconType: "check-circle",
+        iconType: ICON_TYPES.CHECK_CIRCLE,
         bubbleClass: "bg-white/10 border-white/10",
       };
 
@@ -52,7 +64,7 @@ export const getEventConfig = (
       return {
         label: `Client disconnected: ${data.id?.slice(0, 6)}`,
         color: "#ff4d4d",
-        iconType: "x-circle",
+        iconType: ICON_TYPES.X_CIRCLE,
         bubbleClass: "bg-white/10 border-white/10",
       };
 
@@ -60,7 +72,7 @@ export const getEventConfig = (
       return {
         label: "Unknown event",
         color: "#ffffff",
-        iconType: "check-circle",
+        iconType: ICON_TYPES.CHECK_CIRCLE,
         bubbleClass: "bg-white/10 border-white/10",
       };
   }
@@ -74,14 +86,14 @@ export const getHomeMessageConfig = (
     return {
       label: "Status message",
       color: "#ffd700",
-      iconType: "radio",
+      iconType: ICON_TYPES.RADIO,
       bubbleClass: "bg-white/10 border-white/10",
     };
   } else if (isTargeted) {
     return {
       label: "Direct message to you",
       color: "#b266ff",
-      iconType: "user",
+      iconType: ICON_TYPES.USER,
       bubbleClass:
         "bg-gradient-to-r from-[#b266ff]/30 to-[#4f8cff]/30 border-[#b266ff]/30",
     };
@@ -89,7 +101,7 @@ export const getHomeMessageConfig = (
     return {
       label: "Broadcast to all",
       color: "#4f8cff",
-      iconType: "megaphone",
+      iconType: ICON_TYPES.MEGAPHONE,
       bubbleClass:
         "bg-gradient-to-r from-[#4f8cff]/30 to-[#b266ff]/30 border-[#4f8cff]/30",
     };

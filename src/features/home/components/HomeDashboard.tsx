@@ -9,7 +9,11 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { getHomeMessageConfig, MESSAGE_TYPES } from "../../../utils/constants";
+import {
+  EVENT_TYPES,
+  getHomeMessageConfig,
+  MESSAGE_TYPES,
+} from "../../../utils/constants";
 import { getIconComponent } from "../../../utils/icon-utils";
 import { useHome } from "../hooks/useHome";
 
@@ -52,12 +56,12 @@ export const HomeDashboard = () => {
             <span className="font-semibold text-white">Status:</span>
             <span
               className={
-                status === "connected"
+                status === EVENT_TYPES.CONNECTED
                   ? "flex animate-pulse items-center gap-1 font-bold text-green-300"
                   : "flex animate-pulse items-center gap-1 font-bold text-red-400"
               }
             >
-              {status === "connected" ? (
+              {status === EVENT_TYPES.CONNECTED ? (
                 <CheckCircle size={16} />
               ) : (
                 <XCircle size={16} />
@@ -67,7 +71,7 @@ export const HomeDashboard = () => {
             <span className="ml-3 flex items-center gap-1.5">
               <Heartbeat heartbeatKey={heartbeat} />
             </span>
-            {status === "connected" && (
+            {status === EVENT_TYPES.CONNECTED && (
               <Button
                 onClick={handleDisconnect}
                 className="ml-2 rounded-xl bg-gradient-to-r from-[#ff4d4d] to-[#b266ff] px-4 py-2 font-bold text-white shadow transition-transform hover:scale-105"
@@ -75,7 +79,7 @@ export const HomeDashboard = () => {
                 🔌 Disconnect
               </Button>
             )}
-            {status === "disconnected" && (
+            {status === EVENT_TYPES.DISCONNECTED && (
               <Button
                 onClick={handleReconnect}
                 className="ml-2 rounded-xl bg-gradient-to-r from-[#4f8cff] to-[#b266ff] px-4 py-2 font-bold text-white shadow transition-transform hover:scale-105"
@@ -100,7 +104,7 @@ export const HomeDashboard = () => {
               {logs.map((log, i) => {
                 const messageConfig = getHomeMessageConfig(
                   log.type,
-                  log.type === "broadcast" ? log.isTargeted : false,
+                  log.type === MESSAGE_TYPES.BROADCAST ? log.isTargeted : false,
                 );
                 const icon = getIconComponent(
                   messageConfig.iconType,
@@ -121,7 +125,9 @@ export const HomeDashboard = () => {
                       </div>
                       {log.type === MESSAGE_TYPES.STATUS ? null : (
                         <div className="text-base text-white/90">
-                          {log.type === "broadcast" ? log.message : ""}
+                          {log.type === MESSAGE_TYPES.BROADCAST
+                            ? log.message
+                            : ""}
                         </div>
                       )}
                     </div>
