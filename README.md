@@ -1,4 +1,5 @@
 # Nomey Web App
+
 This is the official repository for the Nomey web app, built on the T3 Stack with custom extensions.
 
 ## Tech Stack
@@ -12,7 +13,7 @@ This is the official repository for the Nomey web app, built on the T3 Stack wit
 - [tolgee](https://tolgee.io/) - Translation Management
 - [Meilisearch](https://www.meilisearch.com/) - Full-text search
 - [Upstash](https://upstash.com/) Next compatible redis
-- [Qstash](https://upstash.com/docs/qstash) Next compatible queue handling 
+- [Qstash](https://upstash.com/docs/qstash) Next compatible queue handling
 - [Vitest](https://vitest.dev/) - Testing Framework
 
 ## Testing
@@ -42,6 +43,7 @@ npm run test
 ## Local Development
 
 ### Clone and Install
+
 ```bash
 git clone git@github.com:nomeyy/nomey-next.git
 cd nomey-next
@@ -60,9 +62,57 @@ npm run dev
 
 > ⚠️ **Warning:** The T3 stack hard-enforces environment variables to provide type-safety. The project will not build without all environment variables in place. Contact a dev to get their variables to quickly get yourself up and running.
 
+## Real-time Notifications
+
+This project includes a real-time notification system built on tRPC subscriptions with Server-Sent Events (SSE).
+
+### Usage
+
+#### Client-side (React)
+
+```ts
+import { api } from "@/trpc/react";
+
+const notifications = api.notifications.list.useSubscription();
+```
+
+#### Server-side (Backend Integration)
+
+```ts
+import { notificationsService } from "@/features/notifications";
+
+// Send notification to all subscribers
+notificationsService.notify([], "Broadcasting to everyone");
+
+// Send notification to specific subscribers
+notificationsService.notify(["sub-id-1", "sub-id-2"], "Targeted message");
+```
+
+#### Notification Types
+
+The system supports structured notification events:
+
+- `Ping` - General messages with optional content
+- `NewSub` - When a new client subscribes
+- `Unsub` - When a client unsubscribes
+
+You can extend [notification types](src/features/notifications/types/index.ts) when needed
+
+### Configuration
+
+SSE settings can be configured in the [tRPC setup](src/lib/trpc/index.ts):
+
+```ts
+// Heartbeat every 2 seconds
+ping: { enabled: true, intervalMs: 2000 }
+
+// Reconnect after 5 seconds of inactivity
+client: { reconnectAfterInactivityMs: 5000 }
+```
+
 ## Learn More
 
- - [Nomey Documentation (WIP)](https://nomey.mintlify.app/)
- - [Next Documentation](https://nextjs.org/docs)
- - [T3 Stack Documentation](https://create.t3.gg/en/usage/first-steps)
- - [Mux Documentation](https://www.mux.com/docs)
+- [Nomey Documentation (WIP)](https://nomey.mintlify.app/)
+- [Next Documentation](https://nextjs.org/docs)
+- [T3 Stack Documentation](https://create.t3.gg/en/usage/first-steps)
+- [Mux Documentation](https://www.mux.com/docs)

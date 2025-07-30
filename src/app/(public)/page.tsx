@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
+import { NotificationsDemo } from "./temps/NotificationsDemo";
 
 const LandingPage = () => (
   <>
@@ -12,6 +13,8 @@ const LandingPage = () => (
       <ClientComponent />
 
       <ServerComponent />
+
+      <NotificationsDemo />
     </div>
 
     <Link

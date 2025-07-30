@@ -52,6 +52,15 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       },
     };
   },
+  sse: {
+    ping: {
+      enabled: true,
+      intervalMs: 2e3,
+    },
+    client: {
+      reconnectAfterInactivityMs: 5e3,
+    },
+  },
 });
 
 /**
