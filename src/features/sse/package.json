@@ -1,0 +1,12 @@
+{
+  "name": "@nomey/sse",
+  "version": "1.0.0",
+  "description": "Server-Sent Events (SSE) feature for real-time notifications",
+  "main": "index.ts",
+  "types": "index.ts",
+  "dependencies": {},
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "next": "^15.0.0"
+  }
+}
