@@ -23,4 +23,13 @@ export interface RedisClient {
   hdel(key: string, field: string): Promise<number>;
   hgetall(key: string): Promise<Record<string, string> | null>;
   hexists(key: string, field: string): Promise<number>;
+
+  // Set methods for connection tracking
+  sadd(key: string, member: string): Promise<number>;
+  srem(key: string, member: string): Promise<number>;
+  smembers(key: string): Promise<string[]>;
+  scard(key: string): Promise<number>;
+
+  // TTL methods
+  expire(key: string, seconds: number): Promise<number>;
 }
