@@ -1,4 +1,5 @@
 import { Button } from "@/shared/components/ui/button";
+import SSEDemo from "@/components/SSEDemo";
 
 const WelcomeMessage = ({
   name,
@@ -14,6 +15,11 @@ const WelcomeMessage = ({
       </h1>
       <div className="flex flex-col items-center gap-2">
         <Button onClick={signOut}>{"Sign out"}</Button>
+      </div>
+
+      {/* SSE Demo Section */}
+      <div className="mt-12 w-full">
+        <SSEDemo />
       </div>
     </>
   );

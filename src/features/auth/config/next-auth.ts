@@ -1,8 +1,8 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
+// import { PrismaAdapter } from "@auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
 
-import { db } from "@/lib/db";
+// import { db } from "@/lib/db";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -43,14 +43,19 @@ export const nextAuthConfig = {
      * @see https://next-auth.js.org/providers/github
      */
   ],
-  adapter: PrismaAdapter(db),
+  // adapter: PrismaAdapter(db), // Temporarily disabled due to database issues
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    session: ({ session, user }) => {
+      // Handle case when adapter is disabled or user is not available
+      const userId = user?.id || session?.user?.id || "temp-user-id";
+
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: userId,
+        },
+      };
+    },
   },
 } satisfies NextAuthConfig;

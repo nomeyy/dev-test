@@ -10,7 +10,7 @@ let redisClient: RedisClient | null = null;
 
 /**
  * Get the Redis client based on the environment.
- * In production, it uses Upstash Redis; in development/testing, it uses IORedis.
+ * In production, it uses Upstash Redis; in development/testing, it uses local Redis.
  * This function caches the client to avoid creating multiple connections.
  * @returns {Promise<RedisClient>} The Redis client instance
  */
@@ -18,7 +18,12 @@ export async function getRedis(): Promise<RedisClient> {
   // Return existing client if already initialized
   if (redisClient) return redisClient;
 
-  redisClient = await createUpstashRedisClient();
+  // Use local Redis in development, Upstash in production
+  if (env.NODE_ENV === "development") {
+    redisClient = await createLocalRedisClient();
+  } else {
+    redisClient = await createUpstashRedisClient();
+  }
 
   return redisClient;
 }
@@ -60,6 +65,52 @@ export async function createUpstashRedisClient(): Promise<RedisClient> {
     hdel: (key, field) => upstash.hdel(key, field),
     hgetall: (key) => upstash.hgetall(key),
     hexists: (key, field) => upstash.hexists(key, field),
+  };
+
+  return client;
+}
+
+/**
+ * Create a Redis client for local Redis instance.
+ * Note: This should not be imported directly. Use the `getRedis`
+ * function to retrieve the cached client instead.
+ * @returns {RedisClient} Redis client for local Redis
+ */
+export async function createLocalRedisClient(): Promise<RedisClient> {
+  // Dynamically import IORedis for local Redis
+  const Redis = (await import("ioredis")).default;
+  const redis = new Redis({
+    host: "localhost",
+    port: 6379,
+    maxRetriesPerRequest: 3,
+  });
+
+  // Adapter pattern: Create a unified interface over the IORedis implementation
+  const client: RedisClient = {
+    get: (key) => redis.get(key),
+    set: (key, value, options) => {
+      if (options?.ex) {
+        return redis.setex(key, options.ex, value);
+      }
+      return redis.set(key, value);
+    },
+    del: (key) => redis.del(key),
+    publish: (channel, message) => redis.publish(channel, message),
+    scan: async (cursor, options) => {
+      const [newCursor, keys] = await redis.scan(
+        cursor,
+        "MATCH",
+        options?.match ?? "*",
+        "COUNT",
+        options?.count ?? 10,
+      );
+      return { cursor: newCursor, keys };
+    },
+    hget: (key, field) => redis.hget(key, field),
+    hset: (key, field, value) => redis.hset(key, field, value),
+    hdel: (key, field) => redis.hdel(key, field),
+    hgetall: (key) => redis.hgetall(key),
+    hexists: (key, field) => redis.hexists(key, field),
   };
 
   return client;
