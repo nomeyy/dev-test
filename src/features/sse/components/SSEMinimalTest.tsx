@@ -16,19 +16,37 @@ export function SSEMinimalTest() {
     useSSEContext();
   const [isLoading, setIsLoading] = useState(false);
   const [clientCount, setClientCount] = useState<number>(0);
+  const [targetClientId, setTargetClientId] = useState<string>("");
+  const [targetUserId, setTargetUserId] = useState<string>("");
+  const [eventMessage, setEventMessage] = useState<string>("Test message");
+  const [eventType, setEventType] = useState<string>("test");
 
-  const sendTestEvent = async () => {
+  const sendTestEvent = async (targetType: "broadcast" | "client" | "user") => {
     setIsLoading(true);
     try {
+      const payload: {
+        event: string;
+        data: { message: string; timestamp: number };
+        target?: { clientId?: string; userId?: string };
+      } = {
+        event: eventType,
+        data: { message: eventMessage, timestamp: Date.now() },
+      };
+
+      // Add targeting based on type
+      if (targetType === "client" && targetClientId) {
+        payload.target = { clientId: targetClientId };
+      } else if (targetType === "user" && targetUserId) {
+        payload.target = { userId: targetUserId };
+      }
+      // For broadcast, no target needed
+
       const response = await fetch("/api/sse/test", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          event: "test",
-          data: { message: "Hello from SSE!", timestamp: Date.now() },
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -94,43 +112,189 @@ export function SSEMinimalTest() {
         </div>
       </div>
 
-      {/* Controls */}
+      {/* Connection Controls */}
+      <div className="border-b border-gray-100 px-6 py-4">
+        <div className="mb-4">
+          <h3 className="mb-2 text-sm font-medium text-gray-700">Connection</h3>
+          <div className="flex gap-3">
+            <Button
+              onClick={connect}
+              disabled={isConnected}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
+              Connect
+            </Button>
+            <Button
+              onClick={disconnect}
+              disabled={!isConnected}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
+              Disconnect
+            </Button>
+            <Button
+              onClick={fetchClientCount}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
+              Refresh Count
+            </Button>
+          </div>
+        </div>
+
+        {/* Connection Info */}
+        {isConnected && lastEvent?.event === "connect" && (
+          <div className="mt-3 rounded-lg bg-blue-50 p-3">
+            <h4 className="mb-2 text-xs font-medium text-blue-700">
+              Connection Info
+            </h4>
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-blue-600">Client ID:</span>
+                <code className="rounded bg-blue-100 px-2 py-1 text-blue-800">
+                  {typeof lastEvent.data === "object" &&
+                  lastEvent.data &&
+                  "clientId" in lastEvent.data
+                    ? String(lastEvent.data.clientId)
+                    : "Unknown"}
+                </code>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-blue-600">User ID:</span>
+                <code className="rounded bg-blue-100 px-2 py-1 text-blue-800">
+                  {(() => {
+                    if (
+                      typeof lastEvent.data === "object" &&
+                      lastEvent.data &&
+                      "userId" in lastEvent.data
+                    ) {
+                      const userId = lastEvent.data.userId;
+                      if (userId === null || userId === undefined) {
+                        return "None";
+                      }
+                      if (typeof userId === "string") {
+                        return userId;
+                      }
+                      if (typeof userId === "number") {
+                        return userId.toString();
+                      }
+                      return "None";
+                    }
+                    return "None";
+                  })()}
+                </code>
+              </div>
+            </div>
+            <div className="mt-2 text-xs text-blue-600">
+              💡 Copy these IDs to test specific targeting
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Event Configuration */}
+      <div className="border-b border-gray-100 px-6 py-4">
+        <h3 className="mb-3 text-sm font-medium text-gray-700">
+          Event Configuration
+        </h3>
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">
+              Event Type
+            </label>
+            <input
+              type="text"
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              placeholder="test"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">Message</label>
+            <input
+              type="text"
+              value={eventMessage}
+              onChange={(e) => setEventMessage(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              placeholder="Test message"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Targeting Controls */}
+      <div className="border-b border-gray-100 px-6 py-4">
+        <h3 className="mb-3 text-sm font-medium text-gray-700">Targeting</h3>
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">
+              Target Client ID (optional)
+            </label>
+            <input
+              type="text"
+              value={targetClientId}
+              onChange={(e) => setTargetClientId(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              placeholder="client_1234567890_abc123"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-600">
+              Target User ID (optional)
+            </label>
+            <input
+              type="text"
+              value={targetUserId}
+              onChange={(e) => setTargetUserId(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              placeholder="user123"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Send Event Controls */}
       <div className="px-6 py-4">
-        <div className="flex gap-3">
+        <h3 className="mb-3 text-sm font-medium text-gray-700">Send Events</h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Button
-            onClick={connect}
-            disabled={isConnected}
-            variant="outline"
-            size="sm"
-            className="flex-1"
-          >
-            Connect
-          </Button>
-          <Button
-            onClick={disconnect}
-            disabled={!isConnected}
-            variant="outline"
-            size="sm"
-            className="flex-1"
-          >
-            Disconnect
-          </Button>
-          <Button
-            onClick={sendTestEvent}
+            onClick={() => sendTestEvent("broadcast")}
             disabled={!isConnected || isLoading}
             size="sm"
-            className="flex-1"
+            className="w-full"
           >
-            {isLoading ? "Sending..." : "Send Event"}
+            {isLoading ? "Sending..." : "Broadcast to All"}
           </Button>
           <Button
-            onClick={fetchClientCount}
-            variant="outline"
+            onClick={() => sendTestEvent("client")}
+            disabled={!isConnected || isLoading || !targetClientId}
             size="sm"
-            className="flex-1"
+            variant="outline"
+            className="w-full"
           >
-            Refresh Count
+            {isLoading ? "Sending..." : "Send to Client"}
           </Button>
+          <Button
+            onClick={() => sendTestEvent("user")}
+            disabled={!isConnected || isLoading || !targetUserId}
+            size="sm"
+            variant="outline"
+            className="w-full"
+          >
+            {isLoading ? "Sending..." : "Send to User"}
+          </Button>
+        </div>
+        <div className="mt-2 text-xs text-gray-500">
+          • <strong>Broadcast:</strong> Sends to all connected clients
+          <br />• <strong>Send to Client:</strong> Sends to specific client ID
+          (requires client ID)
+          <br />• <strong>Send to User:</strong> Sends to all clients of a
+          specific user (requires user ID)
         </div>
       </div>
 
