@@ -336,18 +336,22 @@ class SSEService {
       this.disconnectHandlers.delete(clientId);
     }
 
-    // Close the connection
+    // Close the connection (only if not already closed)
     try {
-      client.controller.close();
+      // Check if controller is still writable
+      if (client.controller.desiredSize !== null) {
+        client.controller.close();
+      }
     } catch (error) {
-      sseLogger.warn(
+      // Controller might already be closed, which is fine
+      sseLogger.debug(
         "SSEService",
-        "Error closing client controller",
+        "Controller already closed or error closing",
         {
           clientId,
           reason,
+          error: error instanceof Error ? error.message : String(error),
         },
-        error as Error,
       );
     }
 
@@ -373,6 +377,9 @@ class SSEService {
         }
       }
     }
+
+    // Broadcast updated stats to all remaining clients
+    this.broadcastStats();
 
     sseLogger.debug("SSEService", "Client removed successfully", {
       clientId,
@@ -456,6 +463,12 @@ class SSEService {
       }
       this.sessionClients.get(client.sessionId)!.add(client.id);
     }
+
+    // Broadcast updated stats to all clients (including the new one)
+    // Use setTimeout to ensure the new client is fully connected before broadcasting
+    setTimeout(() => {
+      this.broadcastStats();
+    }, 100);
   }
 
   private sendWelcomeMessage(client: SSEClient): void {
@@ -579,6 +592,28 @@ class SSEService {
         this.removeClient(clientId, "heartbeat_timeout");
       }
     }
+  }
+
+  /**
+   * Broadcast updated stats to all connected clients
+   */
+  private broadcastStats(): void {
+    const stats = this.getStats();
+    const statsEvent: SSEEvent = {
+      type: "system:stats",
+      data: {
+        stats,
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    this.broadcast(statsEvent);
+
+    sseLogger.debug("SSEService", "Stats broadcasted to all clients", {
+      totalClients: stats.totalClients,
+      totalUsers: stats.totalUsers,
+      totalSessions: stats.totalSessions,
+    });
   }
 
   private generateClientId(): string {

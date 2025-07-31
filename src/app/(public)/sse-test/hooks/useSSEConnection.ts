@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from "react";
-import { SSEEvent, SSEStats } from "../types";
+import React, { useState, useRef, useCallback } from "react";
+import type { SSEEvent, SSEStats } from "../types";
 
 export const useSSEConnection = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -56,6 +56,11 @@ export const useSSEConnection = () => {
 
           // Update stats if available
           if (sseEvent.data.stats) {
+            setStats(sseEvent.data.stats);
+          }
+
+          // Handle system:stats events for real-time stats updates
+          if (sseEvent.type === "system:stats" && sseEvent.data.stats) {
             setStats(sseEvent.data.stats);
           }
         } catch (error) {
