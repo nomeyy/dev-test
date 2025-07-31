@@ -1,68 +1,65 @@
-# Nomey Web App
-This is the official repository for the Nomey web app, built on the T3 Stack with custom extensions.
+# SSE Demo - Real-time Server-Sent Events
 
-## Tech Stack
+A practical demonstration of Server-Sent Events (SSE) implementation in Next.js, showcasing real-time communication between server and client.
 
-- [Next.js](https://nextjs.org) - App Framework
-- [NextAuth.js](https://next-auth.js.org) - Authentication
-- [Prisma](https://prisma.io) - Database ORM
-- [Tailwind CSS](https://tailwindcss.com) - CSS Utility Framework
-- [tRPC](https://trpc.io) - API Framework
-- [Mux]() - Video handling (upload / storage / etc.)
-- [tolgee](https://tolgee.io/) - Translation Management
-- [Meilisearch](https://www.meilisearch.com/) - Full-text search
-- [Upstash](https://upstash.com/) Next compatible redis
-- [Qstash](https://upstash.com/docs/qstash) Next compatible queue handling 
-- [Vitest](https://vitest.dev/) - Testing Framework
+## Features
 
-## Testing
+- **Real-time messaging** - Live updates without polling
+- **Multi-client support** - Handle multiple connections simultaneously
+- **Connection monitoring** - Track active clients and connection status
+- **Event broadcasting** - Send messages to all connected clients
+- **Automatic reconnection** - Built-in resilience for network issues
+- **Clean UI** - Simple interface to test and monitor SSE functionality
 
-This project uses [Vitest](https://vitest.dev/) to run both client-side (browser) and server-side (Node.js) tests.
+## Quick Start
 
-### Project Structure
+1. **Start the development server**
 
-Tests are split into two environments:
+   ```bash
+   npm run dev
+   ```
 
-- **Browser (jsdom)** — for React/browser environment tests.
-- **Node.js** — for backend and server-only logic.
+2. **Navigate to the demo**
+   - Visit `/sse-demo` (requires login)
+   - Open multiple browser windows to test multi-client functionality
 
-### File Naming Conventions
+3. **Test the features**
+   - Click "Send Notification" to broadcast messages
+   - Click "Send Alert" for alert-type messages
+   - Monitor connection status and client count in real-time
 
-- Node-specific tests: `*.node.test.ts`
-- Browser tests: any other `*.test.ts`, `*.test.tsx`, etc.
+## How it Works
 
-### Running Tests
+The demo uses Server-Sent Events to establish a persistent connection between the browser and server. Each client gets a unique identifier, allowing you to track individual connections while testing broadcast functionality.
 
-Run **all tests**:
+### Key Components
 
-```bash
-npm run test
+- **SSE Manager** - Handles client connections and message broadcasting
+- **API Routes** - `/api/sse` for connections, `/api/sse/trigger` for sending events
+- **Demo Interface** - Clean UI showing live messages and connection stats
+
+### Technical Details
+
+- Built with Next.js App Router
+- TypeScript for type safety
+- Automatic heartbeat to maintain connections
+- Graceful error handling and reconnection logic
+
+## Architecture
+
+```
+├── src/lib/sse/           # Core SSE functionality
+├── src/lib/sse-demo/      # Demo UI components
+├── src/app/api/sse/       # API endpoints
+└── src/app/(protected)/sse-demo/  # Demo page (login required)
 ```
 
-## Local Development
+## Testing Multiple Clients
 
-### Clone and Install
-```bash
-git clone git@github.com:nomeyy/nomey-next.git
-cd nomey-next
-npm install
-```
+1. Open the SSE demo in multiple browser windows
+2. Notice each window gets a unique client ID
+3. Send notifications from one window
+4. Watch messages appear in all connected windows
+5. Monitor the client count updating in real-time
 
-### Run Containers
-
-You'll need to have `docker` installed locally. We advise running `./scripts/start-services.sh` to safely start your environment, but a normal docker workflow will also work.
-
-### Run Next
-
-```bash
-npm run dev
-```
-
-> ⚠️ **Warning:** The T3 stack hard-enforces environment variables to provide type-safety. The project will not build without all environment variables in place. Contact a dev to get their variables to quickly get yourself up and running.
-
-## Learn More
-
- - [Nomey Documentation (WIP)](https://nomey.mintlify.app/)
- - [Next Documentation](https://nextjs.org/docs)
- - [T3 Stack Documentation](https://create.t3.gg/en/usage/first-steps)
- - [Mux Documentation](https://www.mux.com/docs)
+This demonstrates the multi-client broadcasting capability essential for real-time applications like chat systems, live notifications, and collaborative tools.

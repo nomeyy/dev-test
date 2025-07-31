@@ -1,5 +1,6 @@
 import { cn } from "@/shared/utils";
 import { type HTMLAttributes } from "react";
+import Link from "next/link";
 
 interface MainContainerProps extends HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
@@ -19,6 +20,29 @@ const MainContainer = ({
       )}
       {...props}
     >
+      {/* Simple Navigation */}
+      <nav className="w-full max-w-4xl">
+        <div className="flex gap-4 rounded-lg bg-black/20 p-4">
+          <Link
+            href="/home"
+            className="rounded bg-blue-600 px-3 py-2 transition-colors hover:bg-blue-700"
+          >
+            Home
+          </Link>
+          <Link
+            href="/sse-demo"
+            className="rounded bg-green-600 px-3 py-2 transition-colors hover:bg-green-700"
+          >
+            SSE Demo
+          </Link>
+          <Link
+            href="/reels"
+            className="rounded bg-purple-600 px-3 py-2 transition-colors hover:bg-purple-700"
+          >
+            Reels
+          </Link>
+        </div>
+      </nav>
       {children}
     </main>
   );
