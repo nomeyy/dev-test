@@ -11,7 +11,7 @@ export default function SSETestPage() {
 
           <SSEMinimalTest />
           {/* Instructions */}
-          <div className="mb-8 rounded-lg bg-blue-50 p-6">
+          <div className="mt-8 mb-8 rounded-lg bg-blue-50 p-6">
             <h2 className="mb-3 text-lg font-medium text-blue-900">
               Testing Instructions
             </h2>
