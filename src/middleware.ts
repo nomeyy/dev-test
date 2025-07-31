@@ -1,29 +1,32 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { apiPipeline, appPipeline } from "./features/middleware";
+// import { apiPipeline, appPipeline } from "./features/middleware";
 
 /**
  * Main Next.js middleware handler
  */
 export async function middleware(
-  request: NextRequest,
+  _request: NextRequest,
 ): Promise<NextResponse | Response> {
-  try {
-    const path = request.nextUrl.pathname;
-    const isApiRoute = path.startsWith("/api/");
+  // Temporarily disabled for SSE testing
+  return NextResponse.next();
 
-    // Execute the appropriate middleware pipeline
-    const response = await (isApiRoute ? apiPipeline : appPipeline)(request);
+  // try {
+  //   const path = request.nextUrl.pathname;
+  //   const isApiRoute = path.startsWith("/api/");
 
-    // Ensure we return a proper Response object
-    if (!response) {
-      return NextResponse.next();
-    }
-    return response;
-  } catch (error) {
-    console.error("Middleware error:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
-  }
+  //   // Execute the appropriate middleware pipeline
+  //   const response = await (isApiRoute ? apiPipeline : appPipeline)(request);
+
+  //   // Ensure we return a proper Response object
+  //   if (!response) {
+  //     return NextResponse.next();
+  //   }
+  //   return response;
+  // } catch (error) {
+  //   console.error("Middleware error:", error);
+  //   return new NextResponse("Internal Server Error", { status: 500 });
+  // }
 }
 
 export const config = {
