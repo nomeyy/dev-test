@@ -1,7 +1,9 @@
 import Link from "next/link";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
+import SSEListener from "./SSEListener";
 
+const clientId = 'user-123';
 const LandingPage = () => (
   <>
     <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
@@ -10,8 +12,13 @@ const LandingPage = () => (
 
     <div className="max-w-[600px] space-y-5 text-left">
       <ClientComponent />
-
       <ServerComponent />
+
+      <div>
+        <h1>🚀 SSE TEST</h1>
+        <SSEListener clientId={clientId} />
+      </div>
+
     </div>
 
     <Link
