@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { SendTarget, SSEEvent } from "../types";
+import type { SendTarget, SSEEvent } from "../types";
 
 export const useMessageSender = () => {
   const [sendTarget, setSendTarget] = useState<SendTarget>("user");

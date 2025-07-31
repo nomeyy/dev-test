@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { SSEEvent } from "../types";
+import type { SSEEvent } from "../types";
 
 export const useEventLog = (maxEvents: number = 50) => {
   const [events, setEvents] = useState<SSEEvent[]>([]);
