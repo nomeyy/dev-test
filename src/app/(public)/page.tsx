@@ -15,7 +15,7 @@ const LandingPage = () => (
       <ServerComponent />
 
       <div>
-        <h1>🚀 SSE TEST</h1>
+        <h1>SSE TEST</h1>
         <SSEListener clientId={clientId} />
       </div>
 
