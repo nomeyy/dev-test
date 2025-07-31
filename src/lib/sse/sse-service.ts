@@ -54,7 +54,12 @@ export interface SSEStats {
   totalSessions: number;
   uptime: number;
   heartbeatEnabled: boolean;
+  heartbeatInterval?: number;
+  heartbeatTimeout?: number;
+  totalHeartbeatsSent: number;
+  totalHeartbeatsReceived: number;
   lastHeartbeat?: Date;
+  activeHeartbeats: number;
 }
 
 // Default configuration
@@ -82,6 +87,9 @@ class SSEService {
   private heartbeatTimer?: NodeJS.Timeout;
   private isShuttingDown = false;
   private readonly startTime = Date.now();
+  private totalHeartbeatsSent = 0;
+  private totalHeartbeatsReceived = 0;
+  private lastHeartbeatTime?: Date;
 
   constructor(config: Partial<SSEServiceConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -248,7 +256,16 @@ class SSEService {
       totalSessions: this.sessionClients.size,
       uptime: Date.now() - this.startTime,
       heartbeatEnabled: this.config.enableHeartbeat,
-      lastHeartbeat: this.heartbeatTimer ? new Date() : undefined,
+      heartbeatInterval: this.config.enableHeartbeat
+        ? this.config.heartbeatInterval
+        : undefined,
+      heartbeatTimeout: this.config.enableHeartbeat
+        ? this.config.clientTimeout
+        : undefined,
+      totalHeartbeatsSent: this.totalHeartbeatsSent,
+      totalHeartbeatsReceived: this.totalHeartbeatsReceived,
+      lastHeartbeat: this.lastHeartbeatTime,
+      activeHeartbeats: this.heartbeatTimer ? this.clients.size : 0,
     };
   }
 
@@ -450,6 +467,7 @@ class SSEService {
         sessionId: client.sessionId,
         connectedAt: client.connectedAt.toISOString(),
         serverTime: new Date().toISOString(),
+        stats: this.getStats(),
       },
       timestamp: new Date().toISOString(),
     };
@@ -515,6 +533,7 @@ class SSEService {
       data: {
         timestamp: new Date().toISOString(),
         clientCount: this.clients.size,
+        totalSent: this.totalHeartbeatsSent + 1,
       },
     };
 
@@ -526,9 +545,14 @@ class SSEService {
       }
     }
 
+    // Update heartbeat tracking
+    this.totalHeartbeatsSent++;
+    this.lastHeartbeatTime = new Date();
+
     sseLogger.debug("SSEService", "Heartbeat sent", {
       totalClients: this.clients.size,
       successCount,
+      totalSent: this.totalHeartbeatsSent,
     });
   }
 

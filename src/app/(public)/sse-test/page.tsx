@@ -15,7 +15,12 @@ interface SSEStats {
   totalSessions: number;
   uptime: number;
   heartbeatEnabled: boolean;
+  heartbeatInterval?: number;
+  heartbeatTimeout?: number;
+  totalHeartbeatsSent: number;
+  totalHeartbeatsReceived: number;
   lastHeartbeat?: Date;
+  activeHeartbeats: number;
 }
 
 export default function SSETestPage() {
@@ -224,15 +229,15 @@ export default function SSETestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-900 p-4">
       <div className="mx-auto max-w-6xl">
         <div className="rounded-2xl bg-white/10 p-8 text-white shadow-2xl backdrop-blur-lg">
           <h1 className="mb-8 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-center text-4xl font-bold text-transparent">
             SSE Test Dashboard
           </h1>
 
-          {/* Connection Status */}
-          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {/* Connection Status and Stats */}
+          <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-4">
             <div className="rounded-xl bg-white/5 p-6">
               <h2 className="mb-4 text-xl font-semibold">Connection Status</h2>
               <div className="space-y-3">
@@ -247,7 +252,7 @@ export default function SSETestPage() {
                 {clientId && (
                   <div className="text-sm text-gray-300">
                     Client ID:{" "}
-                    <code className="rounded bg-white/10 px-2 py-1">
+                    <code className="rounded bg-white/10 px-2 py-1 text-xs">
                       {clientId}
                     </code>
                   </div>
@@ -263,7 +268,7 @@ export default function SSETestPage() {
                     {lastEvent.type}
                   </div>
                   <div className="truncate text-xs text-gray-300">
-                    {JSON.stringify(lastEvent.data).substring(0, 50)}...
+                    {JSON.stringify(lastEvent.data).substring(0, 40)}...
                   </div>
                   <div className="text-xs text-gray-400">
                     {formatTime(lastEvent.timestamp)}
@@ -278,27 +283,104 @@ export default function SSETestPage() {
               <h2 className="mb-4 text-xl font-semibold">Server Stats</h2>
               {stats ? (
                 <div className="space-y-2 text-sm">
-                  <div>
-                    Clients:{" "}
-                    <span className="font-medium">{stats.totalClients}</span>
+                  <div className="flex items-center justify-between">
+                    <span>Active Connections:</span>
+                    <span className="font-medium text-blue-300">
+                      {stats.totalClients}
+                    </span>
                   </div>
-                  <div>
-                    Users:{" "}
-                    <span className="font-medium">{stats.totalUsers}</span>
+                  <div className="mb-2 text-xs text-gray-400">
+                    (Each browser tab = 1 connection)
                   </div>
-                  <div>
-                    Sessions:{" "}
-                    <span className="font-medium">{stats.totalSessions}</span>
+                  <div className="flex items-center justify-between">
+                    <span>Unique Users:</span>
+                    <span className="font-medium text-green-300">
+                      {stats.totalUsers}
+                    </span>
                   </div>
-                  <div>
-                    Uptime:{" "}
-                    <span className="font-medium">
+                  <div className="flex items-center justify-between">
+                    <span>Sessions:</span>
+                    <span className="font-medium text-purple-300">
+                      {stats.totalSessions}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Server Uptime:</span>
+                    <span className="font-medium text-gray-300">
                       {Math.round(stats.uptime / 1000)}s
                     </span>
                   </div>
+                  {stats.totalClients > 1 && (
+                    <div className="mt-2 rounded bg-yellow-400/10 p-2 text-xs text-yellow-400">
+                      💡 Multiple connections detected. Close other browser tabs
+                      to reduce count.
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-gray-400">No stats available</div>
+              )}
+            </div>
+
+            <div className="rounded-xl bg-white/5 p-6">
+              <h2 className="mb-4 text-xl font-semibold">Heartbeat Status</h2>
+              {stats ? (
+                <div className="space-y-2 text-sm">
+                  <div>
+                    Enabled:{" "}
+                    <span
+                      className={`font-medium ${stats.heartbeatEnabled ? "text-green-400" : "text-red-400"}`}
+                    >
+                      {stats.heartbeatEnabled ? "Yes" : "No"}
+                    </span>
+                  </div>
+                  {stats.heartbeatEnabled ? (
+                    <>
+                      <div>
+                        Interval:{" "}
+                        <span className="font-medium text-blue-300">
+                          {stats.heartbeatInterval
+                            ? `${stats.heartbeatInterval}ms`
+                            : "N/A"}
+                        </span>
+                      </div>
+                      <div>
+                        Timeout:{" "}
+                        <span className="font-medium text-blue-300">
+                          {stats.heartbeatTimeout
+                            ? `${stats.heartbeatTimeout}ms`
+                            : "N/A"}
+                        </span>
+                      </div>
+                      <div>
+                        Received pings:{" "}
+                        <span className="font-medium text-green-300">
+                          {stats.totalHeartbeatsReceived || 0}
+                        </span>
+                      </div>
+                      <div>
+                        Status Updates:{" "}
+                        <span className="font-medium text-purple-300">
+                          {stats.totalHeartbeatsSent || 0}
+                        </span>
+                      </div>
+                      <div>
+                        Last heartbeat:{" "}
+                        <span className="font-medium text-gray-300">
+                          {stats.lastHeartbeat
+                            ? formatTime(stats.lastHeartbeat.toString())
+                            : "Never"}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-2 text-xs text-gray-400">
+                      Heartbeat is disabled
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-gray-400">Loading heartbeat data...</div>
               )}
             </div>
           </div>
