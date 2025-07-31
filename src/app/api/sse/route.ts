@@ -8,25 +8,19 @@
 import { NextRequest } from "next/server";
 import { sseService } from "@/lib/sse/sse-service";
 import { sseLogger } from "@/lib/sse/logger";
+import { extractClientMetadata, createErrorResponse } from "./utils";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId") || undefined;
     const sessionId = searchParams.get("sessionId") || undefined;
-    const metadata = {
-      userAgent: request.headers.get("user-agent") || "unknown",
-      ip:
-        request.headers.get("x-forwarded-for") ||
-        request.headers.get("x-real-ip") ||
-        "unknown",
-    };
+    const metadata = extractClientMetadata(request);
 
     sseLogger.info("SSE API", "New connection request", {
       userId: userId || "anonymous",
       sessionId: sessionId || "none",
-      userAgent: metadata.userAgent,
-      ip: metadata.ip,
+      ...metadata,
     });
 
     // Create connection using centralized service
@@ -54,24 +48,11 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    sseLogger.error(
+    return createErrorResponse(
+      "Failed to establish SSE connection",
+      500,
       "SSE API",
-      "Failed to create connection",
-      {},
       error as Error,
-    );
-
-    return new Response(
-      JSON.stringify({
-        error: "Failed to establish SSE connection",
-        message: error instanceof Error ? error.message : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
     );
   }
 }

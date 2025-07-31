@@ -299,9 +299,29 @@ class SSEService {
   }
 
   /**
+   * Update client's last heartbeat time (for heartbeat endpoint)
+   */
+  updateClientPing(clientId: string): boolean {
+    const client = this.clients.get(clientId);
+    if (!client) {
+      return false;
+    }
+
+    client.lastHeartbeat = new Date();
+    this.totalHeartbeatsReceived++;
+
+    sseLogger.debug("SSEService", "Client ping updated", {
+      clientId,
+      totalReceived: this.totalHeartbeatsReceived,
+    });
+
+    return true;
+  }
+
+  /**
    * Remove a client connection
    */
-  removeClient(clientId: string, reason: string = "unknown"): void {
+  removeClient(clientId: string, reason = "unknown"): void {
     const client = this.clients.get(clientId);
     if (!client) {
       return;
@@ -391,7 +411,7 @@ class SSEService {
   /**
    * Gracefully shutdown the service
    */
-  async shutdown(timeoutMs: number = 10000): Promise<void> {
+  async shutdown(timeoutMs = 10000): Promise<void> {
     sseLogger.info("SSEService", "Starting graceful shutdown", {
       totalClients: this.clients.size,
       timeoutMs,

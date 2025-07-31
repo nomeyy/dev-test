@@ -5,9 +5,15 @@
  * events to SSE clients. It uses the centralized SSE service.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { sseService } from "@/lib/sse/sse-service";
 import { sseLogger } from "@/lib/sse/logger";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  validateSendTarget,
+  NextResponse,
+} from "../utils";
 
 interface SendEventRequest {
   target: "client" | "user" | "session" | "broadcast" | "all";
@@ -29,116 +35,65 @@ export async function POST(request: NextRequest) {
       eventType: event.type,
     });
 
-    // Validate request
-    if (!event || !event.type) {
-      sseLogger.warn(
+    // Validate event
+    if (!event?.type) {
+      return createErrorResponse(
+        "Event and event type are required",
+        400,
         "SSE Send API",
-        "Invalid request: missing event or event type",
-        {
-          target,
-          targetId: targetId || "none",
-        },
-      );
-      return NextResponse.json(
-        { error: "Event and event type are required" },
-        { status: 400 },
       );
     }
 
-    let sentCount = 0;
+    // Validate target and targetId
+    const validation = validateSendTarget(target, targetId);
+    if (!validation.isValid) {
+      return createErrorResponse(validation.error!, 400, "SSE Send API");
+    }
 
     // Send event based on target
+    let sentCount = 0;
     switch (target) {
       case "client":
-        if (!targetId) {
-          sseLogger.warn("SSE Send API", "Client target requires targetId", {
-            target,
-            eventType: event.type,
-          });
-          return NextResponse.json(
-            { error: "targetId is required for client target" },
-            { status: 400 },
-          );
-        }
-        sentCount = sseService.sendToClient(targetId, event) ? 1 : 0;
+        sentCount = sseService.sendToClient(targetId!, event) ? 1 : 0;
         break;
-
       case "user":
-        if (!targetId) {
-          sseLogger.warn("SSE Send API", "User target requires targetId", {
-            target,
-            eventType: event.type,
-          });
-          return NextResponse.json(
-            { error: "targetId is required for user target" },
-            { status: 400 },
-          );
-        }
-        sentCount = sseService.sendToUser(targetId, event);
+        sentCount = sseService.sendToUser(targetId!, event);
         break;
-
       case "session":
-        if (!targetId) {
-          sseLogger.warn("SSE Send API", "Session target requires targetId", {
-            target,
-            eventType: event.type,
-          });
-          return NextResponse.json(
-            { error: "targetId is required for session target" },
-            { status: 400 },
-          );
-        }
-        sentCount = sseService.sendToSession(targetId, event);
+        sentCount = sseService.sendToSession(targetId!, event);
         break;
-
       case "broadcast":
       case "all":
         sentCount = sseService.broadcast(event);
         break;
-
-      default:
-        sseLogger.warn("SSE Send API", "Invalid target specified", {
-          target,
-          eventType: event.type,
-          validTargets: ["client", "user", "session", "broadcast", "all"],
-        });
-        return NextResponse.json(
-          {
-            error:
-              "Invalid target. Use: client, user, session, broadcast, or all",
-          },
-          { status: 400 },
-        );
     }
 
     const stats = sseService.getStats();
 
-    sseLogger.info("SSE Send API", "Event sent successfully", {
-      target,
-      targetId: targetId || "none",
-      eventType: event.type,
-      sentCount,
-      totalClients: stats.totalClients,
-    });
-
-    return NextResponse.json({
-      success: true,
-      sentCount,
-      target,
-      targetId,
-      event,
-      stats,
-    });
-  } catch (error) {
-    sseLogger.error(
+    return createSuccessResponse(
+      {
+        sentCount,
+        target,
+        targetId,
+        event,
+        stats,
+      },
       "SSE Send API",
-      "Internal server error",
-      {},
-      error as Error,
+      "Event sent successfully",
+      {
+        target,
+        targetId: targetId || "none",
+        eventType: event.type,
+        sentCount,
+        totalClients: stats.totalClients,
+      },
     );
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
+  } catch (error) {
+    return createErrorResponse(
+      "Internal server error",
+      500,
+      "SSE Send API",
+      error as Error,
     );
   }
 }

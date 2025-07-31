@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sseConnectionManager } from "@/lib/sse/connection-manager";
+import { sseService } from "@/lib/sse/sse-service";
 
 /**
  * API endpoint for handling heartbeat responses from SSE clients
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const updated = sseConnectionManager.updateClientPing(clientId);
+    const updated = sseService.updateClientPing(clientId);
 
     if (!updated) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
@@ -42,8 +42,12 @@ export async function POST(request: NextRequest) {
  */
 export async function GET() {
   try {
-    const config = sseConnectionManager.getHeartbeatConfig();
-    const stats = sseConnectionManager.getStats();
+    const stats = sseService.getStats();
+    const config = {
+      heartbeatInterval: stats.heartbeatInterval,
+      clientTimeout: stats.heartbeatTimeout,
+      enabled: stats.heartbeatEnabled,
+    };
 
     return NextResponse.json({
       success: true,
