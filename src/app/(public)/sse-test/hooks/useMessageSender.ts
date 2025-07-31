@@ -32,13 +32,17 @@ export const useMessageSender = () => {
           body: JSON.stringify(payload),
         });
 
-        const result = await response.json();
+        const result = (await response.json()) as {
+          success?: boolean;
+          sentCount?: number;
+          error?: string;
+        };
 
         if (result.success) {
           onEventAdd?.({
             type: "send_result",
             data: {
-              message: `Message sent successfully! Delivered to ${result.sentCount} client(s)`,
+              message: `Message sent successfully! Delivered to ${result.sentCount ?? 0} client(s)`,
               result,
             },
             timestamp: new Date().toISOString(),
@@ -48,7 +52,7 @@ export const useMessageSender = () => {
           onEventAdd?.({
             type: "send_error",
             data: {
-              message: `Send failed: ${result.error}`,
+              message: `Send failed: ${result.error ?? "Unknown error"}`,
               result,
             },
             timestamp: new Date().toISOString(),

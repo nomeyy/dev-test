@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { sseService } from "@/lib/sse";
 
 /**
@@ -7,7 +7,7 @@ import { sseService } from "@/lib/sse";
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as { clientId?: string };
     const { clientId } = body;
 
     if (!clientId) {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("SSE Heartbeat API Error:", error);
+    console.error("SSE Heartbeat API Error:", error as Error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

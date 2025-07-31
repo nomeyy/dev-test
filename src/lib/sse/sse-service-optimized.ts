@@ -182,7 +182,7 @@ class OptimizedSSEService {
   /**
    * Gracefully shutdown the service
    */
-  async shutdown(timeoutMs: number = 10000): Promise<void> {
+  async shutdown(timeoutMs = 10000): Promise<void> {
     if (this.isShuttingDown) {
       return;
     }
@@ -248,9 +248,9 @@ class OptimizedSSEService {
       }
     };
 
-    process.on("SIGINT", () => handleShutdown("SIGINT"));
-    process.on("SIGTERM", () => handleShutdown("SIGTERM"));
-    process.on("SIGUSR2", () => handleShutdown("SIGUSR2")); // nodemon
+    process.on("SIGINT", () => void handleShutdown("SIGINT"));
+    process.on("SIGTERM", () => void handleShutdown("SIGTERM"));
+    process.on("SIGUSR2", () => void handleShutdown("SIGUSR2")); // nodemon
   }
 }
 

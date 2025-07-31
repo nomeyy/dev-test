@@ -16,7 +16,7 @@ export interface LogEntry {
   level: LogLevel;
   component: string;
   message: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   error?: Error;
   clientId?: string;
   userId?: string;
@@ -43,7 +43,7 @@ class SSELogger {
     level: LogLevel,
     component: string,
     message: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     error?: Error,
     clientId?: string,
     userId?: string,
@@ -123,7 +123,7 @@ class SSELogger {
   debug(
     component: string,
     message: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     clientId?: string,
     userId?: string,
     sessionId?: string,
@@ -146,7 +146,7 @@ class SSELogger {
   info(
     component: string,
     message: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     error?: Error,
     clientId?: string,
     userId?: string,
@@ -170,7 +170,7 @@ class SSELogger {
   warn(
     component: string,
     message: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     error?: Error,
     clientId?: string,
     userId?: string,
@@ -194,7 +194,7 @@ class SSELogger {
   error(
     component: string,
     message: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     error?: Error,
     clientId?: string,
     userId?: string,
@@ -218,7 +218,7 @@ class SSELogger {
   critical(
     component: string,
     message: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     error?: Error,
     clientId?: string,
     userId?: string,
@@ -239,7 +239,7 @@ class SSELogger {
   /**
    * Get recent logs
    */
-  getRecentLogs(count: number = 50, level?: LogLevel): LogEntry[] {
+  getRecentLogs(count = 50, level?: LogLevel): LogEntry[] {
     let filteredLogs = this.logs;
 
     if (level !== undefined) {
@@ -252,21 +252,21 @@ class SSELogger {
   /**
    * Get logs for specific client
    */
-  getClientLogs(clientId: string, count: number = 50): LogEntry[] {
+  getClientLogs(clientId: string, count = 50): LogEntry[] {
     return this.logs.filter((log) => log.clientId === clientId).slice(-count);
   }
 
   /**
    * Get logs for specific user
    */
-  getUserLogs(userId: string, count: number = 50): LogEntry[] {
+  getUserLogs(userId: string, count = 50): LogEntry[] {
     return this.logs.filter((log) => log.userId === userId).slice(-count);
   }
 
   /**
    * Get error logs only
    */
-  getErrorLogs(count: number = 50): LogEntry[] {
+  getErrorLogs(count = 50): LogEntry[] {
     return this.logs.filter((log) => log.level >= LogLevel.ERROR).slice(-count);
   }
 
@@ -282,7 +282,7 @@ class SSELogger {
   /**
    * Get log statistics
    */
-  getStats(): Record<string, any> {
+  getStats(): Record<string, unknown> {
     const stats = {
       totalLogs: this.logs.length,
       logLevel: LogLevel[this.logLevel],
@@ -303,7 +303,7 @@ class SSELogger {
     // Count by component
     for (const log of this.logs) {
       stats.componentCounts[log.component] =
-        (stats.componentCounts[log.component] || 0) + 1;
+        (stats.componentCounts[log.component] ?? 0) + 1;
     }
 
     return stats;

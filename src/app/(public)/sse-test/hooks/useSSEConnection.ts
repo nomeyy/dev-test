@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import type { SSEEvent, SSEStats } from "../types";
 
 export const useSSEConnection = () => {
@@ -14,6 +14,27 @@ export const useSSEConnection = () => {
       }
     },
     [],
+  );
+
+  const disconnect = useCallback(
+    (onEventAdd?: (event: SSEEvent) => void) => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      setIsConnected(false);
+      setClientId("");
+      setStats(null); // Clear stats when disconnecting
+      addEvent(
+        {
+          type: "connection",
+          data: { message: "Disconnected from SSE stream" },
+          timestamp: new Date().toISOString(),
+        },
+        onEventAdd,
+      );
+    },
+    [addEvent],
   );
 
   const connect = useCallback(
@@ -44,24 +65,39 @@ export const useSSEConnection = () => {
         );
       };
 
-      eventSource.onmessage = (event) => {
+      eventSource.onmessage = (event: MessageEvent) => {
         try {
-          const sseEvent: SSEEvent = JSON.parse(event.data);
+          const sseEvent = JSON.parse(event.data as string) as SSEEvent;
           addEvent(sseEvent, onEventAdd);
 
           // Extract client ID from welcome event
-          if (sseEvent.type === "system:welcome" && sseEvent.data.clientId) {
-            setClientId(sseEvent.data.clientId);
+          if (
+            sseEvent.type === "system:welcome" &&
+            sseEvent.data &&
+            typeof sseEvent.data === "object" &&
+            "clientId" in sseEvent.data
+          ) {
+            setClientId(sseEvent.data.clientId!);
           }
 
           // Update stats if available
-          if (sseEvent.data.stats) {
-            setStats(sseEvent.data.stats);
+          if (
+            sseEvent.type === "system:stats" &&
+            sseEvent.data &&
+            typeof sseEvent.data === "object" &&
+            "stats" in sseEvent.data
+          ) {
+            setStats(sseEvent.data.stats!);
           }
 
-          // Handle system:stats events for real-time stats updates
-          if (sseEvent.type === "system:stats" && sseEvent.data.stats) {
-            setStats(sseEvent.data.stats);
+          // Update heartbeat stats if available
+          if (
+            sseEvent.type === "system:heartbeat_stats" &&
+            sseEvent.data &&
+            typeof sseEvent.data === "object" &&
+            "stats" in sseEvent.data
+          ) {
+            setStats(sseEvent.data.stats!);
           }
         } catch (error) {
           console.error("Error parsing SSE event:", error);
@@ -76,12 +112,12 @@ export const useSSEConnection = () => {
         }
       };
 
-      eventSource.onerror = (error) => {
-        console.error("SSE connection error:", error);
+      eventSource.onerror = () => {
+        setIsConnected(false);
         addEvent(
           {
-            type: "error",
-            data: { message: "Connection error occurred" },
+            type: "connection",
+            data: { message: "SSE connection error" },
             timestamp: new Date().toISOString(),
           },
           onEventAdd,
@@ -89,28 +125,7 @@ export const useSSEConnection = () => {
         disconnect(onEventAdd);
       };
     },
-    [isConnected, addEvent],
-  );
-
-  const disconnect = useCallback(
-    (onEventAdd?: (event: SSEEvent) => void) => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-      setIsConnected(false);
-      setClientId("");
-      setStats(null); // Clear stats when disconnecting
-      addEvent(
-        {
-          type: "connection",
-          data: { message: "Disconnected from SSE stream" },
-          timestamp: new Date().toISOString(),
-        },
-        onEventAdd,
-      );
-    },
-    [addEvent],
+    [isConnected, addEvent, disconnect],
   );
 
   return {

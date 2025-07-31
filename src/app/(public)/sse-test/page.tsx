@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSSEConnection } from "./hooks/useSSEConnection";
 import { useEventLog } from "./hooks/useEventLog";
 import { useMessageSender } from "./hooks/useMessageSender";
@@ -36,12 +36,12 @@ export default function SSETestPage() {
     connect(userId, sessionId, addEvent);
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = useCallback(() => {
     disconnect(addEvent);
-  };
+  }, [disconnect, addEvent]);
 
   const handleSendMessage = () => {
-    sendTestMessage(addEvent);
+    void sendTestMessage(addEvent);
   };
 
   // Cleanup on unmount
@@ -49,7 +49,7 @@ export default function SSETestPage() {
     return () => {
       handleDisconnect();
     };
-  }, []);
+  }, [handleDisconnect]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-900 p-4">

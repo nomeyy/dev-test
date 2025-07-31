@@ -37,8 +37,8 @@ export class ConnectionManager {
 
     sseLogger.info("ConnectionManager", "Client added", {
       clientId: client.id,
-      userId: client.userId || "anonymous",
-      sessionId: client.sessionId || "none",
+      userId: client.userId ?? undefined,
+      sessionId: client.sessionId ?? undefined,
       totalClients: this.clients.size,
     });
   }
@@ -46,7 +46,7 @@ export class ConnectionManager {
   /**
    * Remove a client connection
    */
-  removeClient(clientId: string, reason: string = "unknown"): void {
+  removeClient(clientId: string, reason = "unknown"): void {
     const client = this.clients.get(clientId);
     if (!client) {
       return;
@@ -323,9 +323,9 @@ export class ConnectionManager {
     try {
       const eventWithTimestamp = {
         ...event,
-        timestamp: event.timestamp || new Date().toISOString(),
+        timestamp: event.timestamp ?? new Date().toISOString(),
         id:
-          event.id ||
+          event.id ??
           `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       };
 

@@ -1,6 +1,16 @@
 export interface SSEEvent {
   type: string;
-  data: any;
+  data:
+    | {
+        clientId?: string;
+        stats?: SSEStats;
+        message?: string;
+        [key: string]: unknown;
+      }
+    | string
+    | number
+    | boolean
+    | null;
   timestamp?: string;
   id?: string;
 }

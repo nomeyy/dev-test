@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import type { SSEEvent } from "../types";
 
-export const useEventLog = (maxEvents: number = 50) => {
+export const useEventLog = (maxEvents = 50) => {
   const [events, setEvents] = useState<SSEEvent[]>([]);
   const [lastEvent, setLastEvent] = useState<SSEEvent | null>(null);
 

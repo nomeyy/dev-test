@@ -5,7 +5,7 @@
  * events to SSE clients. It uses the centralized SSE service.
  */
 
-import { NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import { sseService } from "@/lib/sse";
 import { sseLogger } from "@/lib/sse/logger";
 import {
@@ -26,12 +26,12 @@ interface SendEventRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: SendEventRequest = await request.json();
+    const body = (await request.json()) as SendEventRequest;
     const { target, targetId, event } = body;
 
     sseLogger.info("SSE Send API", "Received event send request", {
       target,
-      targetId: targetId || "none",
+      targetId: targetId ?? "none",
       eventType: event.type,
     });
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       "Event sent successfully",
       {
         target,
-        targetId: targetId || "none",
+        targetId: targetId ?? "none",
         eventType: event.type,
         sentCount,
         totalClients: stats.totalClients,

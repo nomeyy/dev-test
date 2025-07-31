@@ -14,11 +14,11 @@ export { NextResponse };
  */
 export function createErrorResponse(
   message: string,
-  status: number = 500,
-  component: string = "SSE API",
+  status = 500,
+  component = "SSE API",
   error?: Error,
-  context?: Record<string, any>,
-) {
+  context?: Record<string, unknown>,
+): Response {
   if (error) {
     sseLogger.error(component, message, context, error);
   } else {
@@ -38,11 +38,11 @@ export function createErrorResponse(
  * Standard success response helper
  */
 export function createSuccessResponse(
-  data: Record<string, any>,
-  component: string = "SSE API",
+  data: Record<string, unknown>,
+  component = "SSE API",
   message?: string,
-  context?: Record<string, any>,
-) {
+  context?: Record<string, unknown>,
+): Response {
   if (message) {
     sseLogger.info(component, message, context);
   }
@@ -56,14 +56,19 @@ export function createSuccessResponse(
 /**
  * Extract client metadata from request
  */
-export function extractClientMetadata(request: Request) {
-  return {
-    userAgent: request.headers.get("user-agent") || "unknown",
-    ip:
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      "unknown",
-  };
+export function extractClientMetadata(request: Request): {
+  userAgent?: string;
+  ip?: string;
+  referer?: string;
+} {
+  const userAgent = request.headers.get("user-agent") ?? "unknown";
+  const ip =
+    request.headers.get("x-forwarded-for") ??
+    request.headers.get("x-real-ip") ??
+    "unknown";
+  const referer = request.headers.get("referer") ?? "unknown";
+
+  return { userAgent, ip, referer };
 }
 
 /**
@@ -73,20 +78,19 @@ export function validateSendTarget(
   target: string,
   targetId?: string,
 ): { isValid: boolean; error?: string } {
-  const requiresTargetId = ["client", "user", "session"];
+  const validTargets = ["broadcast", "client", "user", "session"];
 
-  if (requiresTargetId.includes(target) && !targetId) {
-    return {
-      isValid: false,
-      error: `targetId is required for ${target} target`,
-    };
-  }
-
-  const validTargets = ["client", "user", "session", "broadcast", "all"];
   if (!validTargets.includes(target)) {
     return {
       isValid: false,
-      error: `Invalid target. Use: ${validTargets.join(", ")}`,
+      error: `Invalid target type. Must be one of: ${validTargets.join(", ")}`,
+    };
+  }
+
+  if (target !== "broadcast" && !targetId) {
+    return {
+      isValid: false,
+      error: `Target ID is required for target type: ${target}`,
     };
   }
 
