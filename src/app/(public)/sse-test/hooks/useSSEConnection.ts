@@ -100,6 +100,7 @@ export const useSSEConnection = () => {
       }
       setIsConnected(false);
       setClientId("");
+      setStats(null); // Clear stats when disconnecting
       addEvent(
         {
           type: "connection",
