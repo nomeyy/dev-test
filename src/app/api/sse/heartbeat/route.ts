@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sseService } from "@/lib/sse/sse-service";
+import { sseService } from "@/lib/sse";
 
 /**
  * API endpoint for handling heartbeat responses from SSE clients

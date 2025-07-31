@@ -49,8 +49,8 @@ export const useSSEConnection = () => {
           const sseEvent: SSEEvent = JSON.parse(event.data);
           addEvent(sseEvent, onEventAdd);
 
-          // Extract client ID from connection event
-          if (sseEvent.type === "system:connected" && sseEvent.data.clientId) {
+          // Extract client ID from welcome event
+          if (sseEvent.type === "system:welcome" && sseEvent.data.clientId) {
             setClientId(sseEvent.data.clientId);
           }
 

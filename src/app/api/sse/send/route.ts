@@ -6,7 +6,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { sseService } from "@/lib/sse/sse-service";
+import { sseService } from "@/lib/sse";
 import { sseLogger } from "@/lib/sse/logger";
 import {
   createErrorResponse,
