@@ -1,0 +1,59 @@
+/**
+ * SSE API Endpoint
+ *
+ * This endpoint provides the main SSE connection interface for clients.
+ * It uses the centralized SSE service for all connection management.
+ */
+
+import { type NextRequest } from "next/server";
+import { sseService } from "@/lib/sse";
+import { sseLogger } from "@/lib/sse/logger";
+import { extractClientMetadata, createErrorResponse } from "./utils";
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId") ?? undefined;
+    const sessionId = searchParams.get("sessionId") ?? undefined;
+    const metadata = extractClientMetadata(request);
+
+    sseLogger.info("SSE API", "New connection request", {
+      userId,
+      sessionId,
+      userAgent: metadata.userAgent ?? "unknown",
+      ip: metadata.ip ?? "unknown",
+    });
+
+    // Create connection using centralized service
+    const { clientId, stream } = sseService.createConnection({
+      userId,
+      sessionId,
+      metadata,
+    });
+
+    sseLogger.info("SSE API", "Connection established", {
+      clientId,
+      userId: userId ?? "anonymous",
+      sessionId: sessionId ?? "none",
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Cache-Control",
+        "Access-Control-Allow-Methods": "GET",
+        "X-Accel-Buffering": "no", // Disable nginx buffering
+      },
+    });
+  } catch (error) {
+    return createErrorResponse(
+      "Failed to establish SSE connection",
+      500,
+      "SSE API",
+      error as Error,
+    );
+  }
+}
