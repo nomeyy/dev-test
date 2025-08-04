@@ -2,6 +2,7 @@ import Link from "next/link";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
 
+
 const LandingPage = () => (
   <>
     <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
