@@ -9,10 +9,10 @@ import type { Middleware } from "../types";
  */
 
 // The maximum number of requests allowed per client in a given time window
-export const LIMIT_PER_WINDOW = 100;
+export const LIMIT_PER_WINDOW = 1000;
 
 // The time window in seconds for rate limiting
-export const WINDOW_IN_SECONDS = 60;
+export const WINDOW_IN_SECONDS = 60 * 60;
 
 // Application routes middleware pipeline
 export const appMiddlewares: Middleware[] = [

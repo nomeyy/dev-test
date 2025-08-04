@@ -22,7 +22,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepare": "husky"
+    "prepare": "husky",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,mdx}\""
   },
   "lint-staged": {
     "*.{js,ts,tsx,jsx,json,md,mdx}": [

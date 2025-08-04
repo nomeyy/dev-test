@@ -8,9 +8,15 @@ export const rateLimitMiddleware: Middleware = async (req, next) => {
   try {
     // Get cached clients for redis and rate limiting
     const redis = await getRedis();
+
+    // Special handling for SSE endpoints - use higher limits
+    const isSSEEndpoint = req.nextUrl.pathname.startsWith("/api/sse");
+    const limit = isSSEEndpoint ? LIMIT_PER_WINDOW * 5 : LIMIT_PER_WINDOW; // 5x higher limit for SSE
+    const windowSec = isSSEEndpoint ? WINDOW_IN_SECONDS * 2 : WINDOW_IN_SECONDS; // 2x longer window for SSE
+
     const limiter = await getRateLimiter(redis, {
-      limit: LIMIT_PER_WINDOW,
-      windowSec: WINDOW_IN_SECONDS,
+      limit,
+      windowSec,
     });
 
     // Identify client (IP or fallback)
@@ -21,18 +27,25 @@ export const rateLimitMiddleware: Middleware = async (req, next) => {
       "unknown";
 
     // Check the rate limit
-    const { success, limit, remaining, reset } = await limiter.limit(ip);
+    const {
+      success,
+      limit: actualLimit,
+      remaining,
+      reset,
+    } = await limiter.limit(ip);
 
     // Prepare common rate limit headers
     const responseHeaders = {
-      "X-RateLimit-Limit": limit.toString(),
+      "X-RateLimit-Limit": actualLimit.toString(),
       "X-RateLimit-Remaining": remaining.toString(),
       "X-RateLimit-Reset": reset.toString(),
     };
 
     if (!success) {
       // If the limit is exceeded, return a 429 response
-      console.warn(`Rate limit exceeded for IP: ${ip}`);
+      console.warn(
+        `Rate limit exceeded for IP: ${ip} on ${req.nextUrl.pathname}`,
+      );
       return withErrorResponse("Rate limit exceeded", 429, {
         ...responseHeaders,
         "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString(),
