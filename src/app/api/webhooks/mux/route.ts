@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 import { headers } from "next/headers";
 import { muxWebhookService } from "@/features/mux";
+// import { sseManager } from "@/lib/sse";
 
 /**
  * Handles incoming Mux webhook events
@@ -13,8 +14,9 @@ export async function POST(request: NextRequest) {
   try {
     const headersList = await headers();
     const body = await request.text();
+    // Test: To check broadcast is working
+    // await sseManager.broadcast("TestBroadCastEvent",JSON.parse(body) as Record<string,string>)
     const event = await muxWebhookService.verifyWebhookEvent(body, headersList);
-
     switch (event.type) {
       // Upload-related events
       case "video.upload.created":
