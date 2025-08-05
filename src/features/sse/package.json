@@ -1,0 +1,6 @@
+{
+  "name": "@features/sse",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Server-Sent Events feature for real-time notifications"
+}
