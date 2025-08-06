@@ -10,6 +10,12 @@ export async function middleware(
 ): Promise<NextResponse | Response> {
   try {
     const path = request.nextUrl.pathname;
+
+    // Allow SSE demo route
+    if (path === "/sse-demo") {
+      return NextResponse.next();
+    }
+
     const isApiRoute = path.startsWith("/api/");
 
     // Execute the appropriate middleware pipeline

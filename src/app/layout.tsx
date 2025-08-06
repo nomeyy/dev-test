@@ -5,6 +5,7 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
+import { SSEProvider } from "@/features/sse";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -25,7 +26,9 @@ export default async function RootLayout({
   return (
     <html lang={language} className={`${geist.variable}`}>
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <TRPCReactProvider>
+          <SSEProvider>{children}</SSEProvider>
+        </TRPCReactProvider>
       </body>
     </html>
   );
