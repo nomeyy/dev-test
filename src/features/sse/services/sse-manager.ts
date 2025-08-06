@@ -5,16 +5,13 @@ class SSEManager {
   private keepAliveIntervals: Map<string, ReturnType<typeof setInterval>> =
     new Map();
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
-  private readonly HEARTBEAT_INTERVAL = 30000; // 30 seconds
-  private readonly CLIENT_TIMEOUT = 120000; // 2 minutes
+  private readonly HEARTBEAT_INTERVAL = 30000;
+  private readonly CLIENT_TIMEOUT = 120000;
 
   constructor() {
     this.startHeartbeat();
   }
 
-  /**
-   * Add a new client connection
-   */
   addClient(
     clientId: string,
     controller: ReadableStreamDefaultController,
@@ -31,20 +28,14 @@ class SSEManager {
     this.clients.set(clientId, client);
   }
 
-  /**
-   * Remove a client connection
-   */
   removeClient(clientId: string): void {
     const client = this.clients.get(clientId);
     if (client) {
       try {
         client.controller.close();
-      } catch (error) {
-        // Controller might already be closed
-      }
+      } catch (error) {}
       this.clients.delete(clientId);
 
-      // Clear keep-alive interval
       const keepAliveInterval = this.keepAliveIntervals.get(clientId);
       if (keepAliveInterval) {
         clearInterval(keepAliveInterval);
@@ -176,7 +167,6 @@ class SSEManager {
       this.heartbeatInterval = null;
     }
 
-    // Clear all keep-alive intervals
     this.keepAliveIntervals.forEach((interval) => {
       clearInterval(interval);
     });
@@ -188,5 +178,4 @@ class SSEManager {
   }
 }
 
-// Export a singleton instance
 export const sseManager = new SSEManager();

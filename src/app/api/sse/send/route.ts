@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send the message via SSE manager
     sseManager.sendMessage({
       event,
       data,
@@ -37,7 +36,6 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  // Return current SSE connection status
   return NextResponse.json({
     connectedClients: sseManager.getClientCount(),
     clients: sseManager.getConnectedClients().map((client) => ({

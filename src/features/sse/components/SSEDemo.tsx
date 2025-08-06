@@ -20,12 +20,8 @@ export function SSEDemo() {
     onMessage: (event) => {
       setMessages((prev) => [...prev, event]);
     },
-    onConnect: () => {
-      // SSE Connected
-    },
-    onDisconnect: () => {
-      // SSE Disconnected
-    },
+    onConnect: () => {},
+    onDisconnect: () => {},
   });
 
   const sendTestMessage = async () => {
@@ -52,7 +48,6 @@ export function SSEDemo() {
 
       const result = (await response.json()) as Record<string, unknown>;
 
-      // Add to sent messages
       setSentMessages((prev) => [
         ...prev,
         {
@@ -62,7 +57,6 @@ export function SSEDemo() {
         },
       ]);
 
-      // Show success message
       setSendStatus({ type: "success", message: "Message sent successfully!" });
       setTimeout(() => setSendStatus(null), 3000);
     } catch (error) {
@@ -82,7 +76,6 @@ export function SSEDemo() {
       <div className="rounded-lg bg-white p-6 shadow-md">
         <h2 className="mb-4 text-2xl font-bold">SSE Demo</h2>
 
-        {/* Connection Status */}
         <div className="mb-6">
           <div className="mb-4 flex items-center gap-4">
             <div
@@ -114,11 +107,9 @@ export function SSEDemo() {
           </div>
         </div>
 
-        {/* Send Test Message */}
         <div className="mb-6 rounded-lg bg-gray-50 p-4">
           <h3 className="mb-2 font-semibold">Send Test Message</h3>
 
-          {/* Status Message */}
           {sendStatus && (
             <div
               className={`mb-3 rounded p-2 text-sm ${
@@ -148,7 +139,6 @@ export function SSEDemo() {
           </div>
         </div>
 
-        {/* Messages */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Message History</h3>
@@ -160,7 +150,6 @@ export function SSEDemo() {
             </button>
           </div>
 
-          {/* Sent Messages */}
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Sent Messages ({sentMessages.length})
@@ -218,7 +207,6 @@ export function SSEDemo() {
             </div>
           </div>
 
-          {/* Received Messages */}
           <div>
             <h4 className="mb-2 font-medium text-gray-700">
               Received Messages ({messages.length})
@@ -305,7 +293,6 @@ export function SSEDemo() {
           </div>
         </div>
 
-        {/* Last Message */}
         {lastMessage && (
           <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
             <h3 className="mb-2 font-semibold text-blue-800">Latest Message</h3>

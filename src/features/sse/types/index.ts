@@ -16,7 +16,7 @@ export interface SSEClient {
 export interface SSEMessage {
   event: string;
   data: Record<string, unknown>;
-  target?: "all" | string | string[]; // 'all' for broadcast, string for specific client, array for multiple clients
+  target?: "all" | string | string[];
 }
 
 export interface SSEConnectionOptions {

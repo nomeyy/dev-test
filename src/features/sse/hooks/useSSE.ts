@@ -40,10 +40,9 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
 
   const connect = useCallback(() => {
     if (eventSourceRef.current || hasConnectedRef.current) {
-      return; // Already connected or has connected
+      return;
     }
 
-    // Build URL with query parameters
     const urlObj = new URL(url, window.location.origin);
     if (userId) urlObj.searchParams.set("userId", userId);
     if (sessionId) urlObj.searchParams.set("sessionId", sessionId);
@@ -81,7 +80,6 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
         onError?.(event);
       };
 
-      // Handle specific event types
       eventSource.addEventListener("connected", (event) => {
         try {
           const data = JSON.parse(event.data) as Record<string, unknown>;
@@ -112,7 +110,6 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
         }
       });
 
-      // Add listeners for our custom event types
       eventSource.addEventListener("test-message", (event) => {
         try {
           const data = JSON.parse(event.data) as Record<string, unknown>;
@@ -161,7 +158,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
       setError("Failed to create SSE connection");
       console.error("SSE connection error:", err);
     }
-  }, [url, userId, sessionId]); // Remove callback dependencies
+  }, [url, userId, sessionId]);
 
   const disconnect = useCallback(() => {
     if (eventSourceRef.current) {
@@ -171,17 +168,15 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     setIsConnected(false);
     hasConnectedRef.current = false;
     onDisconnect?.();
-  }, []); // Remove callback dependency
+  }, []);
 
   useEffect(() => {
-    // Auto-connect on mount
     connect();
 
-    // Cleanup on unmount
     return () => {
       disconnect();
     };
-  }, []); // Empty dependency array to run only once
+  }, []);
 
   return {
     isConnected,

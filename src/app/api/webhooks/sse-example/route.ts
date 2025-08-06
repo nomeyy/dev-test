@@ -6,14 +6,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
 
-    // Example: Send a notification when a webhook is received
     await sendNotification(
       "Webhook Received",
       `Received webhook with data: ${JSON.stringify(body)}`,
       "info",
     );
 
-    // Example: Broadcast a custom event
     await broadcastMessage("webhook-event", {
       type: "webhook",
       data: body as Record<string, unknown>,
