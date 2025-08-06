@@ -8,4 +8,10 @@ export const SearchUsersInputSchema = z.object({
   limit: z.number().int().min(1).max(30).default(SEARCH_LIMIT),
 });
 
+export const brodcastEventInputSchema = z.object({
+  name: z.string(),
+});
+
+export type brodcastEventInput = z.infer<typeof brodcastEventInputSchema>;
+
 export type SearchUsersInput = z.infer<typeof SearchUsersInputSchema>;
