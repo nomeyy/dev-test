@@ -17,7 +17,6 @@ const redisBase: Partial<RedisClient> = {
   hexists: vi.fn().mockResolvedValue(0),
 };
 
-// Create individual mock implementations for each environment
 const mockIORedisClient = {
   ...redisBase,
   get: vi
@@ -40,9 +39,7 @@ const mockUpstashRedisClient = {
   }),
 } as RedisClient;
 
-// Mock the entire Redis module
 vi.mock("@/lib/redis", async () => {
-  // We'll return different implementations based on NODE_ENV
   return {
     getRedis: vi.fn().mockImplementation(async () => {
       if (process.env.NODE_ENV === "production") {
