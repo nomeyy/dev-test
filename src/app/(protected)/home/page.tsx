@@ -1,8 +1,11 @@
 import { getSession, signOut } from "@/features/auth";
 import { WelcomeMessage } from "@/features/home";
+import SSEClient from "@/components/SSEClient";
+import LiveUpdates from "@/components/LiveUpdates";
 
 const HomePage = async () => {
   const session = await getSession();
+   const userId = session?.user?.id; 
 
   const handleSignOut = async () => {
     "use server";
@@ -10,7 +13,13 @@ const HomePage = async () => {
   };
 
   return (
+    <>
     <WelcomeMessage name={session?.user.name ?? ""} signOut={handleSignOut} />
+    
+      <WelcomeMessage name={session?.user?.name ?? ""} signOut={handleSignOut} />
+      {userId && <SSEClient userId={userId} />}
+      {userId && <LiveUpdates userId={userId} />} 
+    </>
   );
 };
 
