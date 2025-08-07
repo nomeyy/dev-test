@@ -3,8 +3,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   /**
-   * Specify your server-side environment variables schema here. This way you can ensure the app
-   * isn't built with invalid env vars.
+   * Server-side environment variables
    */
   server: {
     AUTH_SECRET:
@@ -37,38 +36,36 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().length(36),
     RESEND_TO_DEV_ADDRESS: z.string().email(),
     RESEND_FROM_EMAIL: z.string().refine((val) => {
-      // The "from" email address can be in the format "Name <my@email.com>" or just "my@email.com".
-      // We need to extract the email part and validate it.
-
-      // If the value is already a valid email, return true.
-      if (z.string().email().safeParse(val).success) {
-        return true;
-      }
-
-      // If the value is not a valid email, try to extract the email part.
+      if (z.string().email().safeParse(val).success) return true;
       const withoutQuotes = val.replace(/"/g, "");
       const withoutChevronRight = withoutQuotes.split(">")[0] ?? val;
       const email = withoutChevronRight.split("<")[1] ?? withoutChevronRight;
-
       return z.string().email().safeParse(email).success;
     }),
+
+    // Optional Tolgee API key
     TOLGEE_API_KEY: z.string().optional(),
+
+    // Upstash Redis REST
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+    // **NEW** – Toggle to use ioredis (pub/sub support)
+    USE_IOREDIS: z.enum(["true", "false"]).default("false"),
+    REDIS_URL: z.string().url().optional(), // <-- new
+    SERVERLESS: z.enum(["true", "false"]).optional().default("false"),
+    IS_SERVERLESS: z.boolean().optional().default(false),
   },
 
   /**
-   * Specify your client-side environment variables schema here. This way you can ensure the app
-   * isn't built with invalid env vars. To expose them to the client, prefix them with
-   * `NEXT_PUBLIC_`.
+   * Client-side environment variables
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    // Add NEXT_PUBLIC_ vars if needed
   },
 
   /**
-   * You can't destruct `process.env` as a regular object in the Next.js edge runtimes (e.g.
-   * middlewares) or client-side so we need to destruct manually.
+   * Runtime env mapping
    */
   runtimeEnv: {
     AUTH_SECRET: process.env.AUTH_SECRET,
@@ -90,15 +87,14 @@ export const env = createEnv({
     TOLGEE_API_KEY: process.env.TOLGEE_API_KEY,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+
+    // **NEW**
+    USE_IOREDIS: process.env.USE_IOREDIS,
+    REDIS_URL: process.env.REDIS_URL,
+    SERVERLESS: process.env.SERVERLESS,
+    IS_SERVERLESS: process.env.IS_SERVERLESS,
   },
-  /**
-   * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
-   * useful for Docker builds.
-   */
+
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
-  /**
-   * Makes it so that empty strings are treated as undefined. `SOME_VAR: z.string()` and
-   * `SOME_VAR=''` will throw an error.
-   */
   emptyStringAsUndefined: true,
 });
