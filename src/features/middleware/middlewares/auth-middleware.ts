@@ -14,6 +14,10 @@ import type { Middleware } from "../types";
 export const authMiddleware: Middleware = async (request, next) => {
   const path = request.nextUrl.pathname;
 
+  if (path.startsWith("/api/")) {
+    return await next();
+  }
+
   // Universal routes can be accessed by everyone
   if (isUniversalRoute(path)) {
     return await next();
