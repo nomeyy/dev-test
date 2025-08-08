@@ -14,7 +14,7 @@ const MainContainer = ({
   return (
     <main
       className={cn(
-        `flex min-h-screen flex-col items-center gap-4 bg-gradient-to-b from-[#2e026d] to-[#15162c] p-2 text-white sm:gap-6 sm:p-4 lg:gap-8 lg:p-8`,
+        `flex min-h-screen flex-col items-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white`,
         className,
       )}
       {...props}
