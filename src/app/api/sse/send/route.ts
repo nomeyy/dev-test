@@ -1,5 +1,4 @@
 import type { NextRequest } from "next/server";
-import { getSession } from "@/features/auth";
 import { sseService, sseManager } from "@/lib/sse";
 import { createServiceContext } from "@/utils/service-utils";
 import { z } from "zod";
@@ -59,25 +58,12 @@ const SendEventSchema = z.discriminatedUnion("type", [
 
 export async function POST(request: NextRequest) {
   try {
-    // Get user session for authentication
-    const session = await getSession();
-
     const body = (await request.json()) as unknown;
     const validatedData = SendEventSchema.parse(body);
 
-    // For testing purposes, allow requests without session
-    let userId: string;
-    if (!session?.user?.id) {
-      // Use userId from request body if available, otherwise default
-      if ("userId" in validatedData) {
-        userId = validatedData.userId;
-      } else {
-        userId = "test-user-123";
-      }
-      log.info("Using userId from request body or default", { userId });
-    } else {
-      userId = session.user.id;
-    }
+    // Get userId from request body or use default for broadcast/maintenance
+    const userId =
+      "userId" in validatedData ? validatedData.userId : "test-user-123";
 
     log.info("SSE event send request", {
       userId: userId,
@@ -103,21 +89,55 @@ export async function POST(request: NextRequest) {
 
     switch (validatedData.type) {
       case "notification":
+        // Check if user has active connections
+        const userConnections = sseManager
+          .getActiveConnections()
+          .get(validatedData.userId);
+        if (!userConnections || userConnections.length === 0) {
+          return Response.json(
+            {
+              success: false,
+              message: "User is not connected",
+              userId: validatedData.userId,
+              error: "NO_CONNECTION",
+            },
+            { status: 404 },
+          );
+        }
+
         await sseService.sendNotification(
           validatedData.userId,
           validatedData.message,
           validatedData.metadata,
         );
         eventDetails.message = validatedData.message;
+        eventDetails.recipients = userConnections.length;
         break;
 
       case "custom":
+        // Check if user has active connections
+        const customUserConnections = sseManager
+          .getActiveConnections()
+          .get(validatedData.userId);
+        if (!customUserConnections || customUserConnections.length === 0) {
+          return Response.json(
+            {
+              success: false,
+              message: "User is not connected",
+              userId: validatedData.userId,
+              error: "NO_CONNECTION",
+            },
+            { status: 404 },
+          );
+        }
+
         await sseService.sendCustomEvent(
           validatedData.userId,
           validatedData.eventType,
           validatedData.data,
         );
         eventDetails.message = `Custom event '${validatedData.eventType}' sent`;
+        eventDetails.recipients = customUserConnections.length;
         break;
 
       case "broadcast":
@@ -130,20 +150,54 @@ export async function POST(request: NextRequest) {
         break;
 
       case "error":
+        // Check if user has active connections
+        const errorUserConnections = sseManager
+          .getActiveConnections()
+          .get(validatedData.userId);
+        if (!errorUserConnections || errorUserConnections.length === 0) {
+          return Response.json(
+            {
+              success: false,
+              message: "User is not connected",
+              userId: validatedData.userId,
+              error: "NO_CONNECTION",
+            },
+            { status: 404 },
+          );
+        }
+
         await sseService.sendCustomEvent(validatedData.userId, "error", {
           message: validatedData.errorMessage,
           context: validatedData.context,
         });
         eventDetails.message = `Error: ${validatedData.errorMessage}`;
+        eventDetails.recipients = errorUserConnections.length;
         break;
 
       case "success":
+        // Check if user has active connections
+        const successUserConnections = sseManager
+          .getActiveConnections()
+          .get(validatedData.userId);
+        if (!successUserConnections || successUserConnections.length === 0) {
+          return Response.json(
+            {
+              success: false,
+              message: "User is not connected",
+              userId: validatedData.userId,
+              error: "NO_CONNECTION",
+            },
+            { status: 404 },
+          );
+        }
+
         await sseService.sendNotification(
           validatedData.userId,
           validatedData.message,
           validatedData.data,
         );
         eventDetails.message = validatedData.message;
+        eventDetails.recipients = successUserConnections.length;
         break;
 
       case "maintenance":

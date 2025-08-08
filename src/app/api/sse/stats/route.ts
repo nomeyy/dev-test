@@ -1,5 +1,4 @@
 import type { NextRequest } from "next/server";
-import { getSession } from "@/features/auth";
 import { getStats } from "@/lib/sse";
 import { createServiceContext } from "@/utils/service-utils";
 
@@ -7,24 +6,9 @@ const { log, handleError } = createServiceContext("SSE-Stats");
 
 export async function GET(_request: NextRequest) {
   try {
-    // Get user session for authentication
-    const session = await getSession();
-
-    // For testing purposes, allow requests without session
-    let userId: string;
-    if (!session?.user?.id) {
-      userId = "test-user-123";
-      log.info("Using test userId for stats request", { userId });
-    } else {
-      userId = session.user.id;
-    }
-
     const stats = getStats();
 
-    log.info("SSE stats requested", {
-      userId: userId,
-      stats,
-    });
+    log.info("SSE stats requested", { stats });
 
     const response = {
       success: true,
