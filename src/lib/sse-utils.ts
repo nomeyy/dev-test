@@ -251,3 +251,59 @@ export const DatabaseHelpers = {
     });
   },
 };
+
+/**
+ * Ping utilities for SSE
+ */
+export const PingHelpers = {
+  /**
+   * Send a ping to all connected clients
+   */
+  pingAll: (message?: string) => {
+    return SSE.broadcast("ping", {
+      message: message || "Server ping",
+      timestamp: new Date().toISOString(),
+      type: "server",
+    });
+  },
+
+  /**
+   * Send a ping to a specific user
+   */
+  pingUser: (userId: string, message?: string) => {
+    return SSE.toUser(userId, "ping", {
+      message: message || "User ping",
+      timestamp: new Date().toISOString(),
+      type: "user",
+    });
+  },
+
+  /**
+   * Send a ping to a specific session
+   */
+  pingSession: (sessionId: string, message?: string) => {
+    return SSE.toSession(sessionId, "ping", {
+      message: message || "Session ping",
+      timestamp: new Date().toISOString(),
+      type: "session",
+    });
+  },
+
+  /**
+   * Send a ping to a specific client
+   */
+  pingClient: (clientId: string, message?: string) => {
+    return SSE.toClient(clientId, "ping", {
+      message: message || "Client ping",
+      timestamp: new Date().toISOString(),
+      type: "client",
+    });
+  },
+
+  /**
+   * Get current connection statistics
+   */
+  getStats: () => {
+    return SSE.getStats();
+  },
+};
