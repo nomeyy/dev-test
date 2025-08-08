@@ -1,0 +1,9 @@
+{
+  "name": "@features/sse",
+  "version": "1.0.0",
+  "description": "Server-Sent Events (SSE) feature for real-time notifications",
+  "main": "index.ts",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {}
+}
