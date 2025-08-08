@@ -19,39 +19,42 @@ export const env = createEnv({
       .default("development"),
 
     // Mux environment variables
-    MUX_TOKEN_ID: z.string().uuid(),
-    MUX_TOKEN_SECRET: z.string().length(75),
-    MUX_SIGNING_KEY_ID: z.string().length(45),
-    MUX_SIGNING_KEY_SECRET: z
-      .string()
-      .min(200)
-      .refine((val) => val.endsWith("==")),
-    MUX_VIDEO_QUALITY: z.enum(["basic", "plus", "premium"]),
-    MUX_WEBHOOK_SECRET: z.string().min(32),
+    // It was causing issue for my local setup.
+    MUX_TOKEN_ID: z.string().uuid().optional(),
+    MUX_TOKEN_SECRET: z.string().optional(),
+    MUX_SIGNING_KEY_ID: z.string().optional(),
+    MUX_SIGNING_KEY_SECRET: z.string().optional(),
+    MUX_VIDEO_QUALITY: z.enum(["basic", "plus", "premium"]).optional(),
+    MUX_WEBHOOK_SECRET: z.string().optional(),
 
     // Meilisearch environment variables
     MEILISEARCH_HOST: z.string().url(),
     MEILISEARCH_API_KEY: z.string(),
 
     // Resend environment variables
-    RESEND_API_KEY: z.string().length(36),
-    RESEND_TO_DEV_ADDRESS: z.string().email(),
-    RESEND_FROM_EMAIL: z.string().refine((val) => {
-      // The "from" email address can be in the format "Name <my@email.com>" or just "my@email.com".
-      // We need to extract the email part and validate it.
+    // It was causing issue for my local setup.
+    RESEND_API_KEY: z.string().optional(),
+    RESEND_TO_DEV_ADDRESS: z.string().email().optional(),
+    RESEND_FROM_EMAIL: z
+      .string()
+      .optional()
+      .refine((val) => {
+        if (!val) return true;
+        // The "from" email address can be in the format "Name <my@email.com>" or just "my@email.com".
+        // We need to extract the email part and validate it.
 
-      // If the value is already a valid email, return true.
-      if (z.string().email().safeParse(val).success) {
-        return true;
-      }
+        // If the value is already a valid email, return true.
+        if (z.string().email().safeParse(val).success) {
+          return true;
+        }
 
-      // If the value is not a valid email, try to extract the email part.
-      const withoutQuotes = val.replace(/"/g, "");
-      const withoutChevronRight = withoutQuotes.split(">")[0] ?? val;
-      const email = withoutChevronRight.split("<")[1] ?? withoutChevronRight;
+        // If the value is not a valid email, try to extract the email part.
+        const withoutQuotes = val.replace(/"/g, "");
+        const withoutChevronRight = withoutQuotes.split(">")[0] ?? val;
+        const email = withoutChevronRight.split("<")[1] ?? withoutChevronRight;
 
-      return z.string().email().safeParse(email).success;
-    }),
+        return z.string().email().safeParse(email).success;
+      }),
     TOLGEE_API_KEY: z.string().optional(),
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
