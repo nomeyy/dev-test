@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NotificationsDemo } from "@/features/notifications/components";
 import ClientComponent from "./temps/ClientComponent";
 import ServerComponent from "./temps/ServerComponent";
 
@@ -7,6 +8,8 @@ const LandingPage = () => (
     <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
       Create <span className="text-[hsl(280,100%,70%)]">Nomey</span>
     </h1>
+
+    <NotificationsDemo />
 
     <div className="max-w-[600px] space-y-5 text-left">
       <ClientComponent />
