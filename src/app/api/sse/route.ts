@@ -9,9 +9,18 @@ export async function GET(request: NextRequest) {
     const clientId =
       request.nextUrl.searchParams.get("clientId") ?? `client_${Date.now()}`;
 
-    // Get userId from query parameter or use default
-    const userId =
-      request.nextUrl.searchParams.get("userId") ?? "test-user-123";
+    // Get userId from query parameter (mandatory)
+    const userId = request.nextUrl.searchParams.get("userId");
+    if (!userId) {
+      return Response.json(
+        {
+          success: false,
+          message: "userId parameter is required",
+          error: "MISSING_USER_ID",
+        },
+        { status: 400 },
+      );
+    }
 
     log.info("SSE connection request", { userId, clientId });
 

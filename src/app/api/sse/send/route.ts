@@ -8,14 +8,14 @@ const { log, handleError } = createServiceContext("SSE-Send");
 // Validation schemas for different event types
 const SendNotificationSchema = z.object({
   type: z.literal("notification"),
-  userId: z.string(),
+  userIds: z.array(z.string()).min(1, "At least one userId must be provided"),
   message: z.string(),
   metadata: z.record(z.unknown()).optional(),
 });
 
 const SendCustomEventSchema = z.object({
   type: z.literal("custom"),
-  userId: z.string(),
+  userIds: z.array(z.string()).min(1, "At least one userId must be provided"),
   eventType: z.string(),
   data: z.record(z.unknown()),
 });
@@ -28,14 +28,14 @@ const BroadcastNotificationSchema = z.object({
 
 const SendErrorSchema = z.object({
   type: z.literal("error"),
-  userId: z.string(),
+  userIds: z.array(z.string()).min(1, "At least one userId must be provided"),
   errorMessage: z.string(),
   context: z.string().optional(),
 });
 
 const SendSuccessSchema = z.object({
   type: z.literal("success"),
-  userId: z.string(),
+  userIds: z.array(z.string()).min(1, "At least one userId must be provided"),
   message: z.string(),
   data: z.record(z.unknown()).optional(),
 });
@@ -47,7 +47,7 @@ const SendMaintenanceSchema = z.object({
 });
 
 // Union schema for all event types
-const SendEventSchema = z.discriminatedUnion("type", [
+const SendEventSchema = z.union([
   SendNotificationSchema,
   SendCustomEventSchema,
   BroadcastNotificationSchema,
@@ -61,12 +61,14 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as unknown;
     const validatedData = SendEventSchema.parse(body);
 
-    // Get userId from request body or use default for broadcast/maintenance
-    const userId =
-      "userId" in validatedData ? validatedData.userId : "test-user-123";
+    // Get target users (only for non-broadcast events)
+    const targetUsers =
+      validatedData.type === "broadcast" || validatedData.type === "maintenance"
+        ? []
+        : validatedData.userIds || ["test-user-123"];
 
     log.info("SSE event send request", {
-      userId: userId,
+      targetUsers,
       eventType: validatedData.type,
     });
 
@@ -83,61 +85,73 @@ export async function POST(request: NextRequest) {
         validatedData.type === "broadcast" ||
         validatedData.type === "maintenance"
           ? "all users"
-          : `user: ${"userId" in validatedData ? validatedData.userId : userId}`,
+          : targetUsers.length === 1
+            ? `user: ${targetUsers[0]}`
+            : `users: ${targetUsers.join(", ")}`,
       eventId: `${validatedData.type}-${Date.now()}`,
     };
 
     switch (validatedData.type) {
       case "notification":
-        // Check if user has active connections
-        const userConnections = sseManager
-          .getActiveConnections()
-          .get(validatedData.userId);
-        if (!userConnections || userConnections.length === 0) {
+        // Check if users have active connections
+        let totalRecipients = 0;
+        for (const userId of targetUsers) {
+          const userConnections = sseManager.getActiveConnections().get(userId);
+          if (userConnections && userConnections.length > 0) {
+            totalRecipients += userConnections.length;
+            await sseService.sendNotification(
+              userId,
+              validatedData.message,
+              validatedData.metadata,
+            );
+          }
+        }
+
+        if (totalRecipients === 0) {
           return Response.json(
             {
               success: false,
-              message: "User is not connected",
-              userId: validatedData.userId,
+              message: "No target users are connected",
+              targetUsers,
               error: "NO_CONNECTION",
             },
             { status: 404 },
           );
         }
 
-        await sseService.sendNotification(
-          validatedData.userId,
-          validatedData.message,
-          validatedData.metadata,
-        );
         eventDetails.message = validatedData.message;
-        eventDetails.recipients = userConnections.length;
+        eventDetails.recipients = totalRecipients;
         break;
 
       case "custom":
-        // Check if user has active connections
-        const customUserConnections = sseManager
-          .getActiveConnections()
-          .get(validatedData.userId);
-        if (!customUserConnections || customUserConnections.length === 0) {
+        // Check if users have active connections
+        let customTotalRecipients = 0;
+        for (const userId of targetUsers) {
+          const userConnections = sseManager.getActiveConnections().get(userId);
+          if (userConnections && userConnections.length > 0) {
+            customTotalRecipients += userConnections.length;
+            await sseService.sendCustomEvent(
+              userId,
+              validatedData.eventType,
+              validatedData.data,
+            );
+          }
+        }
+
+        if (customTotalRecipients === 0) {
           return Response.json(
             {
               success: false,
-              message: "User is not connected",
-              userId: validatedData.userId,
+              message: "No target users are connected",
+              targetUsers,
               error: "NO_CONNECTION",
             },
             { status: 404 },
           );
         }
 
-        await sseService.sendCustomEvent(
-          validatedData.userId,
-          validatedData.eventType,
-          validatedData.data,
-        );
         eventDetails.message = `Custom event '${validatedData.eventType}' sent`;
-        eventDetails.recipients = customUserConnections.length;
+        eventDetails.recipients = customTotalRecipients;
         break;
 
       case "broadcast":
@@ -150,54 +164,64 @@ export async function POST(request: NextRequest) {
         break;
 
       case "error":
-        // Check if user has active connections
-        const errorUserConnections = sseManager
-          .getActiveConnections()
-          .get(validatedData.userId);
-        if (!errorUserConnections || errorUserConnections.length === 0) {
+        // Check if users have active connections
+        let errorTotalRecipients = 0;
+        for (const userId of targetUsers) {
+          const userConnections = sseManager.getActiveConnections().get(userId);
+          if (userConnections && userConnections.length > 0) {
+            errorTotalRecipients += userConnections.length;
+            await sseService.sendCustomEvent(userId, "error", {
+              message: validatedData.errorMessage,
+              context: validatedData.context,
+            });
+          }
+        }
+
+        if (errorTotalRecipients === 0) {
           return Response.json(
             {
               success: false,
-              message: "User is not connected",
-              userId: validatedData.userId,
+              message: "No target users are connected",
+              targetUsers,
               error: "NO_CONNECTION",
             },
             { status: 404 },
           );
         }
 
-        await sseService.sendCustomEvent(validatedData.userId, "error", {
-          message: validatedData.errorMessage,
-          context: validatedData.context,
-        });
         eventDetails.message = `Error: ${validatedData.errorMessage}`;
-        eventDetails.recipients = errorUserConnections.length;
+        eventDetails.recipients = errorTotalRecipients;
         break;
 
       case "success":
-        // Check if user has active connections
-        const successUserConnections = sseManager
-          .getActiveConnections()
-          .get(validatedData.userId);
-        if (!successUserConnections || successUserConnections.length === 0) {
+        // Check if users have active connections
+        let successTotalRecipients = 0;
+        for (const userId of targetUsers) {
+          const userConnections = sseManager.getActiveConnections().get(userId);
+          if (userConnections && userConnections.length > 0) {
+            successTotalRecipients += userConnections.length;
+            await sseService.sendNotification(
+              userId,
+              validatedData.message,
+              validatedData.data,
+            );
+          }
+        }
+
+        if (successTotalRecipients === 0) {
           return Response.json(
             {
               success: false,
-              message: "User is not connected",
-              userId: validatedData.userId,
+              message: "No target users are connected",
+              targetUsers,
               error: "NO_CONNECTION",
             },
             { status: 404 },
           );
         }
 
-        await sseService.sendNotification(
-          validatedData.userId,
-          validatedData.message,
-          validatedData.data,
-        );
         eventDetails.message = validatedData.message;
-        eventDetails.recipients = successUserConnections.length;
+        eventDetails.recipients = successTotalRecipients;
         break;
 
       case "maintenance":

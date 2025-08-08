@@ -73,17 +73,16 @@ describe("SSE Route", () => {
       );
     });
 
-    it("should use default userId when not provided", async () => {
+    it("should return 400 when userId is not provided", async () => {
       mockRequest = new NextRequest("http://localhost:3000/api/sse");
 
       const response = await GET(mockRequest);
 
-      expect(response.status).toBe(200);
-      expect(sseManager.registerClient).toHaveBeenCalledWith(
-        "test-user-123",
-        expect.stringMatching(/^client_\d+$/),
-        expect.any(Object),
-      );
+      expect(response.status).toBe(400);
+      const responseData = await response.json();
+      expect(responseData.success).toBe(false);
+      expect(responseData.message).toBe("userId parameter is required");
+      expect(responseData.error).toBe("MISSING_USER_ID");
     });
 
     it("should generate clientId when not provided", async () => {
