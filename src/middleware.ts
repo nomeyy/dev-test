@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { apiPipeline, appPipeline } from "./features/middleware";
+import {
+  apiPipeline,
+  appPipeline,
+  sseMiddlewares,
+} from "./features/middleware";
+import { compose } from "./features/middleware/utils";
 
 /**
  * Main Next.js middleware handler
@@ -11,9 +16,21 @@ export async function middleware(
   try {
     const path = request.nextUrl.pathname;
     const isApiRoute = path.startsWith("/api/");
+    const isSSERoute = path.startsWith("/api/sse");
 
     // Execute the appropriate middleware pipeline
-    const response = await (isApiRoute ? apiPipeline : appPipeline)(request);
+    let response;
+    if (isSSERoute) {
+      // Use SSE-specific middleware (no rate limiting)
+      const ssePipeline = compose(sseMiddlewares);
+      response = await ssePipeline(request);
+    } else if (isApiRoute) {
+      // Use regular API middleware
+      response = await apiPipeline(request);
+    } else {
+      // Use app middleware
+      response = await appPipeline(request);
+    }
 
     // Ensure we return a proper Response object
     if (!response) {
