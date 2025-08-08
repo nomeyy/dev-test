@@ -1,0 +1,7 @@
+{
+  "name": "@/features/sse",
+  "version": "1.0.0",
+  "description": "Real-time Server-Sent Events (SSE) service for client-server communication",
+  "main": "index.ts",
+  "private": true
+}
