@@ -42,6 +42,5 @@ export interface IMultiSelectDropdown {
 }
 
 export interface IMessageResponse {
-  message:string;
+  message: string;
 }
-

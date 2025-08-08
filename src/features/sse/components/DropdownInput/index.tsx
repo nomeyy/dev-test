@@ -2,7 +2,7 @@ import type { IDropdownInput, IDropdownInputOption } from "@/types/sse";
 import { useEffect, useRef, useState } from "react";
 
 const DropdownInput = (props: IDropdownInput) => {
-  const { options, selected, onSelect,className="" } = props;
+  const { options, selected, onSelect, className = "" } = props;
 
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -25,7 +25,10 @@ const DropdownInput = (props: IDropdownInput) => {
   }, [dropdownRef]);
 
   return (
-    <div ref={dropdownRef} className={`relative inline-block w-[480px] ${className}`}>
+    <div
+      ref={dropdownRef}
+      className={`relative inline-block w-[480px] ${className}`}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full cursor-pointer items-center justify-between rounded-md border border-gray-300 bg-white px-4 py-2 text-left focus:ring-2 focus:ring-blue-500 focus:outline-none"
