@@ -28,3 +28,6 @@ export const apiMiddlewares: Middleware[] = [
   rateLimitMiddleware,
   i18nMiddleware,
 ];
+
+// SSE routes middleware pipeline (no rate limiting for persistent connections)
+export const sseMiddlewares: Middleware[] = [loggingMiddleware, i18nMiddleware];

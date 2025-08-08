@@ -24,7 +24,7 @@ export default async function RootLayout({
 
   return (
     <html lang={language} className={`${geist.variable}`}>
-      <body>
+      <body suppressHydrationWarning={true}>
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
     </html>
