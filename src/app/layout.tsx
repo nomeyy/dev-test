@@ -1,5 +1,6 @@
 import "@/styles/globals.css";
 import { getLanguage } from "@/features/i18n";
+import { Toaster } from "react-hot-toast";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
@@ -25,6 +26,7 @@ export default async function RootLayout({
   return (
     <html lang={language} className={`${geist.variable}`}>
       <body>
+        <Toaster position="top-right" />
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
     </html>

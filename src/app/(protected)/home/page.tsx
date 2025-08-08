@@ -1,3 +1,4 @@
+import SSEClient from "@/component/SSEClient";
 import { getSession, signOut } from "@/features/auth";
 import { WelcomeMessage } from "@/features/home";
 
@@ -10,7 +11,13 @@ const HomePage = async () => {
   };
 
   return (
-    <WelcomeMessage name={session?.user.name ?? ""} signOut={handleSignOut} />
+    <>
+      <WelcomeMessage name={session?.user.name ?? ""} signOut={handleSignOut} />
+      <SSEClient
+        clientId={session?.user.id!}
+        clientName={session?.user.name!}
+      />
+    </>
   );
 };
 
