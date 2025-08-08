@@ -43,12 +43,21 @@ export default function SSEClient({ clientId, clientName }: Props) {
       console.log("SSE connection error:", error);
       setConnectionStatus("error");
 
+      // Close the current connection
       newEventSource.close();
 
-      // Optionally, try reconnecting after a few seconds
+      // Show toast notification about connection error
+      toast.error(
+        "Connection lost. Users will appear offline until reconnected.",
+      );
+
+      // Try reconnecting after a few seconds
       setTimeout(() => {
-        setEventSource(newEventSource);
-      }, 3000);
+        const reconnectSource = new EventSource(
+          `/api/sse?clientId=${clientId}&username=${encodeURIComponent(clientName)}`,
+        );
+        setEventSource(reconnectSource);
+      }, 5000);
     };
 
     newEventSource.addEventListener("notification", (event) => {
@@ -148,6 +157,10 @@ export default function SSEClient({ clientId, clientName }: Props) {
     return a.username.localeCompare(b.username); // Then alphabetically by username
   });
 
+  // Determine if users should be shown as online based on connection status
+  const showUsersOnline =
+    connectionStatus !== "error" && connectionStatus !== "disconnected";
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Connection Status Card */}
@@ -161,9 +174,11 @@ export default function SSEClient({ clientId, clientName }: Props) {
 
             {/* Broadcast Button */}
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 setOpen(true);
                 setActiveClient(null);
+                console.log("Broadcast button clicked");
               }}
               className="flex items-center gap-2 rounded-lg border border-white/30 bg-white/20 px-4 py-2 text-white shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:bg-white/30"
             >
@@ -198,10 +213,17 @@ export default function SSEClient({ clientId, clientName }: Props) {
 
       {/* Connected Users Card */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-        <div className="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
+        <div
+          className={cn(
+            "px-6 py-4",
+            showUsersOnline
+              ? "bg-gradient-to-r from-green-500 to-teal-600"
+              : "bg-gradient-to-r from-gray-500 to-gray-600",
+          )}
+        >
           <h3 className="flex items-center gap-2 text-xl font-bold text-white">
             <span className="text-2xl">👥</span>
-            Connected Users
+            {showUsersOnline ? "Connected Users" : "Users (Offline)"}
             <span className="rounded-full bg-white/20 px-2 py-1 text-sm text-white">
               {clients.length}
             </span>
@@ -261,20 +283,45 @@ export default function SSEClient({ clientId, clientName }: Props) {
 
                   {/* Online Indicator */}
                   <div className="flex items-center space-x-2">
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-                    <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                      Online
+                    <div
+                      className={cn(
+                        "h-2 w-2 rounded-full",
+                        showUsersOnline
+                          ? "animate-pulse bg-green-500"
+                          : "bg-gray-400",
+                      )}
+                    ></div>
+                    <span
+                      className={cn(
+                        "text-xs font-medium",
+                        showUsersOnline
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-gray-600 dark:text-gray-400",
+                      )}
+                    >
+                      {showUsersOnline ? "Online" : "Offline"}
                     </span>
                     {client.clientId !== clientId && (
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
                           setOpen(true);
                           setActiveClient(client.clientId);
+                          console.log(
+                            "Message button clicked for client:",
+                            client.clientId,
+                          );
                         }}
-                        className="flex items-center gap-1 rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                        className={cn(
+                          "flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                          showUsersOnline
+                            ? "bg-blue-500 text-white hover:bg-blue-600"
+                            : "cursor-not-allowed bg-gray-300 text-gray-600",
+                        )}
+                        disabled={!showUsersOnline}
                       >
                         <span>💬</span>
-                        Message
+                        {showUsersOnline ? "Message" : "Unavailable"}
                       </button>
                     )}
                   </div>
@@ -340,6 +387,19 @@ export default function SSEClient({ clientId, clientName }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        onSend={sendNotification}
+        type={activeClient ? "personal" : "broadcast"}
+        targetUser={
+          activeClient
+            ? clients.find((c) => c.clientId === activeClient)?.username
+            : undefined
+        }
+      />
     </div>
   );
 }
