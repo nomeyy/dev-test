@@ -63,10 +63,11 @@ const SseDashboard = () => {
 
   const handleMessageSubmit = async () => {
     setMessage("");
+    const usersList = userIds.map((user:IDropdownInputOption)=>user.id)
     await triggerEvent({
       type: messageType.id,
       message: message,
-      userId: userIds,
+      userIds: usersList,
     });
   };
 

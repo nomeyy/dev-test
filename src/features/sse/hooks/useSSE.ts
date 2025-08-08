@@ -1,7 +1,6 @@
 "use client";
 import type {
   IApiResponse,
-  IDropdownInputOption,
   IEventHistory,
   IMessageResponse,
 } from "@/types/sse";
@@ -17,7 +16,6 @@ const useSSE = ({
   const eventSourceRef = useRef<EventSource | null>(null);
   const [isConnectionRunning, setIsConnectionRunning] = useState(false);
   const [eventHistory, setEventHistory] = useState<IEventHistory[]>([]);
-  const lastPing = useRef<number>(Date.now());
 
   const getCurrentTime = () => {
     return new Date().toLocaleTimeString("en-IN", {
@@ -35,7 +33,6 @@ const useSSE = ({
     eventSourceRef.current = eveSource;
 
     eveSource.onopen = () => {
-      lastPing.current = Date.now();
       setIsConnectionRunning(true);
 
       setEventHistory((prev) => [
@@ -62,24 +59,28 @@ const useSSE = ({
       ]);
     };
 
-    eveSource.addEventListener("notification", () => {
-      lastPing.current = Date.now();
+    eveSource.addEventListener("notification", (data: MessageEvent) => {
+      const response: IMessageResponse = JSON.parse(
+        (data?.data as string) ?? "",
+      ) as IMessageResponse;
       setEventHistory((prev) => [
         {
           time: getCurrentTime(),
-          message: "Ping detected",
+          message: response?.message,
           connectionId: connectionId,
         },
         ...prev,
       ]);
     });
 
-    eveSource.addEventListener("broadcast", () => {
-      lastPing.current = Date.now();
+    eveSource.addEventListener("broadcast", (data: MessageEvent) => {
+      const response: IMessageResponse = JSON.parse(
+        (data?.data as string) ?? "",
+      ) as IMessageResponse;
       setEventHistory((prev) => [
         {
           time: getCurrentTime(),
-          message: "Ping detected",
+          message: response?.message,
           connectionId: connectionId,
         },
         ...prev,
@@ -90,7 +91,6 @@ const useSSE = ({
       const response: IMessageResponse = JSON.parse(
         (data?.data as string) ?? "",
       ) as IMessageResponse;
-      lastPing.current = Date.now();
       setEventHistory((prev) => [
         {
           time: getCurrentTime(),
@@ -102,7 +102,6 @@ const useSSE = ({
     });
 
     eveSource.addEventListener("ping", () => {
-      lastPing.current = Date.now();
       setEventHistory((prev) => [
         {
           time: getCurrentTime(),
@@ -121,7 +120,7 @@ const useSSE = ({
   const triggerEvent = async (payload: {
     type: string;
     message: string;
-    userId?: IDropdownInputOption[];
+    userIds?: string[];
   }) => {
     try {
       const res: Response = await fetch("api/sse/send", {
