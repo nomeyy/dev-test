@@ -76,6 +76,7 @@
     "eslint": "^9.23.0",
     "eslint-config-next": "15.3.4",
     "eslint-plugin-boundaries": "^5.0.1",
+    "eventsource": "^4.0.0",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "lint-staged": "^16.1.2",
