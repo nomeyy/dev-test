@@ -1,6 +1,6 @@
 export interface IEventHistory {
   time: string;
-  message: string;
+  message: unknown;
   connectionId: string;
   status?: boolean;
 }
