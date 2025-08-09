@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/shared/components/ui/button";
 
 const WelcomeMessage = ({
@@ -14,6 +15,19 @@ const WelcomeMessage = ({
       </h1>
       <div className="flex flex-col items-center gap-2">
         <Button onClick={signOut}>{"Sign out"}</Button>
+      </div>
+
+      <div className="mt-5 flex flex-col items-center gap-2">
+        <Link href="/broadcast-panel">
+          <Button variant="secondary" className="w-full">
+            Broadcast Event
+          </Button>
+        </Link>
+        <Link href="/subscriber-panel">
+          <Button variant="secondary" className="w-full">
+            Go to Event
+          </Button>
+        </Link>
       </div>
     </>
   );
