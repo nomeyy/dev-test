@@ -23,7 +23,11 @@ export default async function RootLayout({
   const language = await getLanguage();
 
   return (
-    <html lang={language} className={`${geist.variable}`}>
+    <html
+      lang={language}
+      className={`${geist.variable}`}
+      suppressHydrationWarning
+    >
       <body>
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
