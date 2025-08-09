@@ -31,6 +31,8 @@ export const paths = {
   landingPage: "/",
   homePage: "/home",
   reelsUploadPage: "/reels/upload",
+  broadcastPage: "/broadcast-panel",
+  eventSubscriberPage: "/subscriber-panel",
 } as const;
 
 // ⚠️ DEFINE METADATA FOR NEW ROUTES HERE ⚠️
@@ -49,6 +51,16 @@ export const routes: Record<keyof typeof paths, RouteData> = {
   reelsUploadPage: {
     name: "Reels Upload Page",
     path: paths.reelsUploadPage,
+    accessType: "protected",
+  },
+  broadcastPage: {
+    name: "Broadcast Page",
+    path: paths.broadcastPage,
+    accessType: "protected",
+  },
+  eventSubscriberPage: {
+    name: "Event Subscriber Page",
+    path: paths.eventSubscriberPage,
     accessType: "protected",
   },
 };
