@@ -1,14 +1,11 @@
 "use client";
-import type {
-  IApiResponse,
-  IDropdownInputOption,
-  IEventHistory,
-} from "@/types/sse";
+import type { IApiResponse, IDropdownInputOption } from "@/types/sse";
 import useSSE from "../../../features/sse/hooks/useSSE";
 import { useEffect, useState } from "react";
 import DropdownInput from "../../../features/sse/components/DropdownInput";
-import { cn } from "@/shared/utils";
+import { cn } from "../../../features/shared/utils";
 import MultiSelectDropdown from "../../../features/sse/components/MultiSelectDropdown";
+import { Button } from "../../../features/shared/components/ui/button";
 
 const SseDashboard = () => {
   const [connectionId, setConnectionId] = useState("");
@@ -20,6 +17,8 @@ const SseDashboard = () => {
   });
   const [userIds, setUserIds] = useState<IDropdownInputOption[]>([]);
   const [allUsers, setAllUsers] = useState<IDropdownInputOption[]>([]);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   const {
     isConnectionRunning,
@@ -33,11 +32,6 @@ const SseDashboard = () => {
   const getUniqueId = () => {
     // generates unique connection ID for backend to establish and handle a connection
     return Math.random().toString(36).substring(2, 12);
-  };
-
-  const handleConnect = async () => {
-    await getAllUsers();
-    establishConnection();
   };
 
   const getAllUsers = async () => {
@@ -54,21 +48,36 @@ const SseDashboard = () => {
           id: user,
           label: user,
           isSelected: false,
-        })) ?? [],
+        })) ?? []
       );
     } catch (e) {
       console.log(e);
     }
   };
 
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    establishConnection();
+
+    setTimeout(() => {
+      setIsConnecting(false);
+      void getAllUsers();
+    }, 2000);
+  };
+
   const handleMessageSubmit = async () => {
-    setMessage("");
-    const usersList = userIds.map((user:IDropdownInputOption)=>user.id)
+    setIsSendingMessage(true);
+    const usersList = userIds.map((user: IDropdownInputOption) => user.id);
+
     await triggerEvent({
       type: messageType.id,
       message: message,
       userIds: usersList,
     });
+
+    setMessage("");
+    setUserIds([]);
+    setIsSendingMessage(false);
   };
 
   useEffect(() => {
@@ -78,168 +87,197 @@ const SseDashboard = () => {
   }, []);
 
   return (
-    <div className="w-full max-w-[800px]">
-      <h1 className="mb-[28px] text-center text-[42px] font-bold">
-        SSE Dashboard
-      </h1>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="mx-auto max-w-2xl">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+            SSE Dashboard
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Real-time event streaming control panel
+          </p>
+        </div>
 
-      {/* connection configuration */}
-      <div className="mb-6 rounded-[12px] bg-white p-[24px]">
-        <h3 className="mb-[10px] text-[20px] font-bold text-black">
-          Set Up Your Connection
-        </h3>
-        <div className="mb-[10px] flex items-center justify-between gap-[20px]">
-          {/* generate user id */}
-          <div className="relative flex-1">
-            <label htmlFor="userId" className="block text-lg text-black">
-              User ID
-            </label>
-            <input
-              type="text"
-              id="userId"
-              placeholder="Enter User ID"
-              value={userId}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                if (e.target.value.length <= 24) setUserId(e.target.value);
-              }}
-              disabled={isConnectionRunning}
-              className={`block w-full rounded-lg border border-[#c3c3c3] px-4 py-2 text-black ${isConnectionRunning ? "bg-[#d5d5d5]" : ""}`}
-            />
-            {!isConnectionRunning && (
-              <button
-                className="absolute top-[40px] right-4 cursor-pointer text-[12px] text-black underline"
-                onClick={() => setUserId(getUniqueId)}
+        {/* Connection Setup */}
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            Connection
+          </h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                User ID
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Enter User ID"
+                  value={userId}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 24) setUserId(e.target.value);
+                  }}
+                  disabled={isConnectionRunning}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                />
+                {!isConnectionRunning && (
+                  <button
+                    onClick={() => setUserId(getUniqueId())}
+                    className="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-blue-600 transition-colors hover:text-blue-800"
+                  >
+                    Auto
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Connection ID
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Enter Connection ID"
+                  value={connectionId}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 24)
+                      setConnectionId(e.target.value);
+                  }}
+                  disabled={isConnectionRunning}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                />
+                {!isConnectionRunning && (
+                  <button
+                    onClick={() => setConnectionId(getUniqueId())}
+                    className="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-blue-600 transition-colors hover:text-blue-800"
+                  >
+                    Auto
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                onClick={isConnectionRunning ? killConnection : handleConnect}
+                disabled={!connectionId || !userId || isConnecting}
+                className={cn(
+                  "w-full rounded-md px-6 py-2 font-medium transition-colors sm:w-auto",
+                  isConnectionRunning
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                )}
               >
-                Auto Generate
+                {isConnectionRunning
+                  ? "Disconnect"
+                  : isConnecting
+                  ? "Connecting..."
+                  : "Connect"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Event Sender */}
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            Send Events
+          </h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Event Type
+              </label>
+              <DropdownInput
+                options={[
+                  { id: "notification", label: "Notification" },
+                  { id: "broadcast", label: "Broadcast" },
+                  { id: "maintenance", label: "Maintenance" },
+                ]}
+                selected={messageType}
+                onSelect={setMessageType}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Target Users
+              </label>
+              <MultiSelectDropdown
+                options={allUsers}
+                selected={userIds}
+                setSelected={setUserIds}
+                placeHolder="Select users to notify"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Message
+              </label>
+              <textarea
+                placeholder="Enter your message..."
+                value={message}
+                onChange={(e) => {
+                  if (e.target.value.length <= 500) setMessage(e.target.value);
+                }}
+                rows={3}
+                className="w-full resize-none rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="pt-2">
+              <Button
+                onClick={handleMessageSubmit}
+                disabled={!isConnectionRunning || !message || isSendingMessage}
+                className="w-full rounded-md bg-green-600 px-6 py-2 font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              >
+                {isSendingMessage ? "Sending..." : "Send Event"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Event Log */}
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Event Log</h2>
+            {eventHistory?.length > 0 && (
+              <button
+                onClick={clearEventHistory}
+                className="text-sm text-gray-500 transition-colors hover:text-gray-700"
+              >
+                Clear
               </button>
             )}
           </div>
 
-          {/* generate connection id */}
-          <div className="relative flex-1">
-            <label htmlFor="connectionId" className="block text-lg text-black">
-              Connection ID
-            </label>
-            <input
-              type="text"
-              id="connectionId"
-              placeholder="Enter Connection ID"
-              value={connectionId}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                if (e.target.value.length <= 24)
-                  setConnectionId(e.target.value);
-              }}
-              disabled={isConnectionRunning}
-              className={`block w-full rounded-lg border border-[#c3c3c3] px-4 py-2 text-black ${isConnectionRunning ? "bg-[#d5d5d5]" : ""}`}
-            />
-            {!isConnectionRunning && (
-              <button
-                className="absolute top-[40px] right-4 cursor-pointer text-[12px] text-black underline"
-                onClick={() => setConnectionId(getUniqueId())}
-              >
-                Auto Generate
-              </button>
-            )}
-          </div>
-        </div>
-        <button
-          className={cn(
-            "w-36 rounded-[24px] px-3 py-1 text-white",
-            connectionId && userId
-              ? isConnectionRunning
-                ? "cursor-pointer bg-[#f11b1b]"
-                : "cursor-pointer bg-[#458e45]"
-              : "bg-[#7d7d7d]",
-          )}
-          onClick={isConnectionRunning ? killConnection : handleConnect}
-          disabled={!connectionId}
-        >
-          {isConnectionRunning ? "Disconnect" : "Connect"}
-        </button>
-      </div>
-
-      {/* Trigger custom events */}
-      <div className="mb-6 rounded-[12px] bg-white p-[24px]">
-        <h3 className="mb-[10px] text-[20px] font-bold text-black">
-          Send Custom Events
-        </h3>
-        <label className="block text-lg text-black">Event Type</label>
-        <DropdownInput
-          options={[
-            { id: "notification", label: "Notification" },
-            { id: "broadcast", label: "Broadcast" },
-            { id: "maintenance", label: "Maintenance" },
-          ]}
-          selected={messageType}
-          onSelect={(item: IDropdownInputOption) => setMessageType(item)}
-          className="mb-4"
-        />
-        <label className="block text-lg text-black">Event Type</label>
-        <MultiSelectDropdown
-          options={allUsers}
-          selected={userIds}
-          setSelected={setUserIds}
-          className="mb-4"
-          placeHolder="Select User IDs"
-        />
-        <div className="relative">
-          <label htmlFor="message" className="block text-lg text-black">
-            Message
-          </label>
-          <textarea
-            id="message"
-            placeholder="Enter message"
-            value={message}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-              if (e.target.value.length <= 500) setMessage(e.target.value);
-            }}
-            className="mb-4 block w-[480px] rounded-lg border border-[#c3c3c3] px-4 py-2 text-black"
-          />
-          <button
-            className={cn(
-              "w-36 rounded-[24px] px-3 py-1 text-white",
-              isConnectionRunning
-                ? "cursor-pointer bg-[#458e45]"
-                : "bg-[#7d7d7d]",
-            )}
-            onClick={handleMessageSubmit}
-            disabled={!isConnectionRunning || !message}
-          >
-            Send
-          </button>
-        </div>
-      </div>
-
-      {/* Event History */}
-      <div className="mb-6 rounded-[12px] bg-white p-[24px]">
-        <div className="flex items-center justify-between">
-          <h3 className="mb-[10px] text-[20px] font-bold text-black">
-            Event Log
-          </h3>
-          {eventHistory?.length > 0 && (
-            <button
-              className="cursor-pointer text-black underline"
-              onClick={clearEventHistory}
-            >
-              Clear Log
-            </button>
+          {eventHistory?.length > 0 ? (
+            <div className="max-h-64 space-y-3 overflow-y-auto">
+              {eventHistory.map((item, index) => (
+                <div
+                  key={index}
+                  className="rounded-md border border-gray-200 bg-gray-50 p-3"
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm text-blue-600">▶</span>
+                    <pre className="font-mono text-xs break-words text-gray-700">
+                      {JSON.stringify(item, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-gray-500">
+              <div className="mb-2 text-4xl">📡</div>
+              <p>No events logged yet</p>
+            </div>
           )}
         </div>
-        {eventHistory?.length > 0 ? (
-          <ul className="max-h-[280px] overflow-auto">
-            {eventHistory?.map((item: IEventHistory, index: number) => (
-              <li
-                key={`eventHistory_item_${index}`}
-                className="mb-6 flex gap-x-1 text-black"
-              >
-                {">>"}
-                <pre>{JSON.stringify(item, null, 2)}</pre>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-center text-black">No logs to show</p>
-        )}
       </div>
     </div>
   );

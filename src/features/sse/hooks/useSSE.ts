@@ -27,26 +27,26 @@ const useSSE = ({
     });
   };
 
-  const updateEventHistory = (connectionId:string,message:string)=>{
-let msg:unknown
+  const updateEventHistory = (connectionId: string, message: string) => {
+    let msg: unknown;
 
-      try{
-        msg = JSON.parse(message)
-      } catch(e){
-        console.log(e);
-        msg = message
-      }
+    try {
+      msg = JSON.parse(message);
+    } catch (e) {
+      console.log(e);
+      msg = message;
+    }
 
-      setEventHistory((prev) => [
-        {
-          time: getCurrentTime(),
-          message: msg,
-          connectionId: connectionId,
-          status: true,
-        },
-        ...prev,
-      ]);
-  }
+    setEventHistory((prev) => [
+      {
+        time: getCurrentTime(),
+        message: msg,
+        connectionId: connectionId,
+        status: true,
+      },
+      ...prev,
+    ]);
+  };
 
   const establishConnection = () => {
     const requestUrl = `/api/sse?clientId=${connectionId}&userId=${userId}`;
@@ -82,30 +82,29 @@ let msg:unknown
 
     eveSource.addEventListener("notification", (data: MessageEvent) => {
       const response: IMessageResponse = JSON.parse(
-        (data?.data as string) ?? "",
+        (data?.data as string) ?? ""
       ) as IMessageResponse;
-      
-      updateEventHistory(connectionId, response?.message)
+
+      updateEventHistory(connectionId, response?.message);
     });
 
     eveSource.addEventListener("broadcast", (data: MessageEvent) => {
       const response: IMessageResponse = JSON.parse(
-        (data?.data as string) ?? "",
+        (data?.data as string) ?? ""
       ) as IMessageResponse;
 
-      updateEventHistory(connectionId, response?.message)
+      updateEventHistory(connectionId, response?.message);
     });
 
     eveSource.addEventListener("maintenance", (data: MessageEvent) => {
       const response: IMessageResponse = JSON.parse(
-        (data?.data as string) ?? "",
+        (data?.data as string) ?? ""
       ) as IMessageResponse;
 
-      updateEventHistory(connectionId, response?.message)
+      updateEventHistory(connectionId, response?.message);
     });
 
-    eveSource.addEventListener("ping", (data) => {
-      console.log(data)
+    eveSource.addEventListener("ping", () => {
       setEventHistory((prev) => [
         {
           time: getCurrentTime(),
@@ -133,9 +132,7 @@ let msg:unknown
         body: JSON.stringify(payload),
       });
 
-      const result: IApiResponse = (await res.json()) as IApiResponse;
-
-      updateEventHistory(connectionId, result?.details?.message)
+      (await res.json()) as IApiResponse;
     } catch (e) {
       return { success: false, msg: e };
     }
