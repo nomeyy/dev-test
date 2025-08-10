@@ -17,6 +17,21 @@ export const userService = {
   },
 
   /**
+   * Retrieves a list of all user IDs from the database.
+   *
+   * @async
+   * @function
+   * @returns {Promise<string[]>} A promise that resolves to an array of user IDs.
+   */
+  getAllUsersIds: async (): Promise<string[]> => {
+    return db.user
+      .findMany({
+        select: { id: true },
+      })
+      .then((users) => users.map((user) => user.id));
+  },
+
+  /**
    * Checks if a user exists in the application
    * @param userId Id to check
    * @returns {boolean} True if user exists, false otherwise

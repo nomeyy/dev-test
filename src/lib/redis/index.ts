@@ -44,6 +44,7 @@ export async function createUpstashRedisClient(): Promise<RedisClient> {
     set: (key, value, options) => upstash.set(key, value, options),
     del: (key) => upstash.del(key),
     publish: (channel, message) => upstash.publish(channel, message),
+    subscribe: (channel) => upstash.subscribe(channel),
     scan: async (cursor, options) => {
       const q = await upstash.scan(cursor, options);
 
@@ -60,6 +61,9 @@ export async function createUpstashRedisClient(): Promise<RedisClient> {
     hdel: (key, field) => upstash.hdel(key, field),
     hgetall: (key) => upstash.hgetall(key),
     hexists: (key, field) => upstash.hexists(key, field),
+    sadd: (key, member) => upstash.sadd(key, member),
+    srem: (key, member) => upstash.srem(key, member),
+    smembers: (key) => upstash.smembers(key),
   };
 
   return client;
