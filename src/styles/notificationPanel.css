@@ -1,0 +1,213 @@
+.notification-panel h2 {
+  margin-bottom: 1.5rem;
+}
+
+.notification-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.notification-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.notification-section h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #2c3e50;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-description {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.broadcast-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.message-input {
+  /* width: 100%; */
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.3s ease;
+  min-height: 120px;
+  resize: none;
+}
+
+.message-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.message-input:disabled {
+  background-color: #f8f9fa;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.message-input::placeholder {
+  color: #adb5bd;
+}
+
+.input-hint {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.client-id-display {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-family: "Courier New", monospace;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.connection-required {
+  position: sticky;
+  bottom: 0;
+  background: rgba(255, 243, 205, 0.95);
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  backdrop-filter: blur(5px);
+}
+
+.warning-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #856404;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.warning-icon {
+  font-size: 1rem;
+}
+
+.notification-section .btn {
+  margin-top: 0.5rem;
+}
+
+.notification-section:nth-child(1) h3 {
+  color: #2c3e50;
+}
+
+.notification-section:nth-child(2) h3 {
+  color: #2c3e50;
+}
+
+.notification-section:nth-child(3) h3 {
+  color: #2c3e50;
+}
+
+.notification-section:nth-child(4) h3 {
+  color: #2c3e50;
+}
+
+.notification-section {
+  transition: all 0.3s ease;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.notification-section:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.notification-section.success {
+  background: rgba(40, 167, 69, 0.05);
+  border-left: 4px solid #28a745;
+}
+
+.notification-section.error {
+  background: rgba(220, 53, 69, 0.05);
+  border-left: 4px solid #dc3545;
+}
+
+/* Animation for buttons */
+.notification-section .btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.notification-section .btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.3s ease,
+    height 0.3s ease;
+}
+
+.notification-section .btn:active::after {
+  width: 200px;
+  height: 200px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .notification-section {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .notification-section h3 {
+    font-size: 1rem;
+  }
+
+  .section-description {
+    font-size: 0.85rem;
+  }
+
+  .message-input {
+    min-height: 60px;
+    font-size: 0.85rem;
+  }
+
+  .input-hint,
+  .client-id-display {
+    font-size: 0.75rem;
+  }
+
+  .warning-message {
+    font-size: 0.85rem;
+  }
+
+  .broadcast-form .btn {
+    font-size: 0.85rem;
+    padding: 0.6rem 1.2rem;
+  }
+}
