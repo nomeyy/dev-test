@@ -14,7 +14,7 @@ export { SessionProvider } from "./contexts/SessionContext";
 export { PublicSessionProvider } from "./contexts/PublicSessionContext";
 
 // Server request handlers for authentication endpoints
-export { handlers } from "./handlers";
+export { handlers, auth } from "./handlers";
 
 // Authentication actions (login, logout, registration, etc.)
 export * from "./actions/auth-actions";

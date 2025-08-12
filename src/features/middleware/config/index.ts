@@ -18,13 +18,13 @@ export const WINDOW_IN_SECONDS = 60;
 export const appMiddlewares: Middleware[] = [
   loggingMiddleware, // Keep first for accuract timing
   authMiddleware,
-  rateLimitMiddleware,
+  // rateLimitMiddleware, // Temporarily disabled due to Redis request limit
   i18nMiddleware,
 ];
 
 // API routes middleware pipeline
 export const apiMiddlewares: Middleware[] = [
   loggingMiddleware,
-  rateLimitMiddleware,
+  // rateLimitMiddleware, // Temporarily disabled due to Redis request limit
   i18nMiddleware,
 ];
