@@ -1,8 +1,11 @@
 import { getSession, signOut } from "@/features/auth";
-import { WelcomeMessage } from "@/features/home";
+import { Connections } from "@/features/home";
+import { Button } from "@/shared/components/ui/button";
 
 const HomePage = async () => {
   const session = await getSession();
+
+  console.log("Session data:", session);
 
   const handleSignOut = async () => {
     "use server";
@@ -10,7 +13,12 @@ const HomePage = async () => {
   };
 
   return (
-    <WelcomeMessage name={session?.user.name ?? ""} signOut={handleSignOut} />
+    <div>
+      <Connections />
+      <Button variant={"secondary"} onClick={handleSignOut}>
+        Sign Out
+      </Button>
+    </div>
   );
 };
 

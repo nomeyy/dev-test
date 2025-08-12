@@ -30,11 +30,13 @@
     ]
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.7.2",
+    "@auth/prisma-adapter": "^2.10.0",
     "@mux/mux-node": "^11.1.0",
     "@mux/mux-player-react": "^3.4.0",
     "@mux/mux-uploader-react": "^1.2.0",
-    "@prisma/client": "^6.10.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "@prisma/adapter-neon": "^6.13.0",
+    "@prisma/client": "^6.13.0",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-email/components": "^0.0.42",
     "@t3-oss/env-nextjs": "^0.12.0",
