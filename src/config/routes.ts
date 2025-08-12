@@ -29,8 +29,10 @@ import type { RouteData } from "@/types/routes";
 // Ensure every route in the app has an entry here
 export const paths = {
   landingPage: "/",
+  signinPage: "/signin",
   homePage: "/home",
   reelsUploadPage: "/reels/upload",
+  sseDemoPage: "/sse-demo",
 } as const;
 
 // ⚠️ DEFINE METADATA FOR NEW ROUTES HERE ⚠️
@@ -41,6 +43,11 @@ export const routes: Record<keyof typeof paths, RouteData> = {
     path: paths.landingPage,
     accessType: "public",
   },
+  signinPage: {
+    name: "Sign In Page",
+    path: paths.signinPage,
+    accessType: "public",
+  },
   homePage: {
     name: "Home Page",
     path: paths.homePage,
@@ -49,6 +56,11 @@ export const routes: Record<keyof typeof paths, RouteData> = {
   reelsUploadPage: {
     name: "Reels Upload Page",
     path: paths.reelsUploadPage,
+    accessType: "protected",
+  },
+  sseDemoPage: {
+    name: "SSE Demo Page",
+    path: paths.sseDemoPage,
     accessType: "protected",
   },
 };

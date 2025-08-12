@@ -14,12 +14,19 @@ const LandingPage = () => (
       <ServerComponent />
     </div>
 
-    <Link
-      href={"/api/auth/signin"}
-      className={`rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20`}
-    >
-      {"Sign in"}
-    </Link>
+    <div className="space-y-4">
+      <Link
+        href={"/signin"}
+        className={`rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20`}
+      >
+        {"Sign in"}
+      </Link>
+      
+      <div className="text-sm text-white/70 max-w-md text-center">
+        <p>🚀 <strong>SSE Testing Ready!</strong></p>
+        <p>Use username login to test multiple profiles and real-time notifications</p>
+      </div>
+    </div>
   </>
 );
 

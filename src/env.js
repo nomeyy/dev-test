@@ -11,31 +11,43 @@ export const env = createEnv({
       process.env.NODE_ENV === "production"
         ? z.string()
         : z.string().optional(),
-    AUTH_DISCORD_ID: z.string(),
-    AUTH_DISCORD_SECRET: z.string(),
+    // Align with Discord provider used in auth config. Optional in dev.
+    AUTH_DISCORD_ID:
+      process.env.NODE_ENV === "production" ? z.string() : z.string().optional(),
+    AUTH_DISCORD_SECRET:
+      process.env.NODE_ENV === "production" ? z.string() : z.string().optional(),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
 
-    // Mux environment variables
-    MUX_TOKEN_ID: z.string().uuid(),
-    MUX_TOKEN_SECRET: z.string().length(75),
-    MUX_SIGNING_KEY_ID: z.string().length(45),
-    MUX_SIGNING_KEY_SECRET: z
-      .string()
-      .min(200)
-      .refine((val) => val.endsWith("==")),
-    MUX_VIDEO_QUALITY: z.enum(["basic", "plus", "premium"]),
-    MUX_WEBHOOK_SECRET: z.string().min(32),
+    // Mux environment variables (optional in dev)
+    MUX_TOKEN_ID:
+      process.env.NODE_ENV === "production" ? z.string().uuid() : z.string().uuid().optional(),
+    MUX_TOKEN_SECRET:
+      process.env.NODE_ENV === "production" ? z.string().length(75) : z.string().length(75).optional(),
+    MUX_SIGNING_KEY_ID:
+      process.env.NODE_ENV === "production" ? z.string().length(45) : z.string().length(45).optional(),
+    MUX_SIGNING_KEY_SECRET:
+      process.env.NODE_ENV === "production"
+        ? z.string().min(200).refine((val) => val.endsWith("=="))
+        : z.string().min(200).refine((val) => val.endsWith("==")).optional(),
+    MUX_VIDEO_QUALITY:
+      process.env.NODE_ENV === "production" ? z.enum(["basic", "plus", "premium"]) : z.enum(["basic", "plus", "premium"]).optional(),
+    MUX_WEBHOOK_SECRET:
+      process.env.NODE_ENV === "production" ? z.string().min(32) : z.string().min(32).optional(),
 
-    // Meilisearch environment variables
-    MEILISEARCH_HOST: z.string().url(),
-    MEILISEARCH_API_KEY: z.string(),
+    // Meilisearch environment variables (optional in dev)
+    MEILISEARCH_HOST:
+      process.env.NODE_ENV === "production" ? z.string().url() : z.string().url().optional(),
+    MEILISEARCH_API_KEY:
+      process.env.NODE_ENV === "production" ? z.string() : z.string().optional(),
 
-    // Resend environment variables
-    RESEND_API_KEY: z.string().length(36),
-    RESEND_TO_DEV_ADDRESS: z.string().email(),
+    // Resend environment variables (optional in dev)
+    RESEND_API_KEY:
+      process.env.NODE_ENV === "production" ? z.string().length(36) : z.string().length(36).optional(),
+    RESEND_TO_DEV_ADDRESS:
+      process.env.NODE_ENV === "production" ? z.string().email() : z.string().email().optional(),
     RESEND_FROM_EMAIL: z.string().refine((val) => {
       // The "from" email address can be in the format "Name <my@email.com>" or just "my@email.com".
       // We need to extract the email part and validate it.
