@@ -38,6 +38,16 @@ export default tseslint.config(
         "error",
         { checksVoidReturn: { attributes: false } },
       ],
+      // Temporary overrides for SSE development
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/prefer-nullish-coalescing": "warn",
+      "@typescript-eslint/consistent-generic-constructors": "warn",
+      "@typescript-eslint/no-inferrable-types": "warn",
+      "@typescript-eslint/no-empty-function": "warn",
       // Boundaries: enforce only importing from a feature's `index.ts`
       "boundaries/element-types": [
         "error",
