@@ -31,6 +31,10 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const nextAuthConfig = {
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   providers: [
     DiscordProvider,
     /**
@@ -45,11 +49,20 @@ export const nextAuthConfig = {
   ],
   adapter: PrismaAdapter(db),
   callbacks: {
-    session: ({ session, user }) => ({
+    jwt: ({ token, user }) => {
+      if (user) {
+        console.log("JWT Callback", { token, user });
+        // When user first signs in, user object is available
+        token.id = user.id;
+      }
+      return token;
+    },
+    // Then use the session callback to add the id from token to session
+    session: ({ session, token }) => ({
       ...session,
       user: {
         ...session.user,
-        id: user.id,
+        id: token.id as string,
       },
     }),
   },

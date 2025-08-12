@@ -1,26 +1,25 @@
 import { NextResponse } from "next/server";
 import {
+  getSession,
   isProtectedRoute,
   isPublicRoute,
   isUniversalRoute,
 } from "@/features/auth";
-import { authConfig } from "@/config/auth";
 import { paths } from "@/config/routes";
-import type { Middleware } from "../types";
 
 /**
  * Authentication middleware that enforces route access rules.
  */
-export const authMiddleware: Middleware = async (request, next) => {
+export const authMiddleware = getSession(async (request) => {
   const path = request.nextUrl.pathname;
 
   // Universal routes can be accessed by everyone
   if (isUniversalRoute(path)) {
-    return await next();
+    return NextResponse.next();
   }
 
   // Check authentication status
-  const hasSession = !!request.cookies.get(authConfig.sessionCookieName);
+  const hasSession = !!request.auth;
 
   // Redirect unauthenticated users away from protected routes
   if (isProtectedRoute(path) && !hasSession) {
@@ -33,5 +32,5 @@ export const authMiddleware: Middleware = async (request, next) => {
   }
 
   // Continue to the next middleware or route handler
-  return await next();
-};
+  return NextResponse.next();
+});
