@@ -20,7 +20,7 @@ This is the official repository for the Nomey web app, built on the T3 Stack wit
 
 Watch the Server-Sent Events (SSE) implementation in action:
 
-https://github.com/nomeyy/nomey-next/assets/public/localhost_3000_home_real-time.webm
+[https://github.com/nomeyy/nomey-next/assets/public/localhost_3000_home_real-time.webm](https://res.cloudinary.com/dqb3ctnmc/video/upload/v1755062726/localhost_3000_home_real-time_cwqzdp.webm)
 
 This video demonstrates:
 
