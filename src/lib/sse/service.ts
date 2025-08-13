@@ -6,6 +6,7 @@ import type {
   SSEConnectionOptions,
   SSEBroadcastOptions,
   SSEStats,
+  SSEUserStats,
 } from "./types";
 
 /**
@@ -35,6 +36,7 @@ export const SSE_CONSTANTS = {
   CONNECTION_PREFIX: "sse:connection:",
   USER_PREFIX: "sse:user:",
   STATS_KEY: "sse:stats",
+  USER_STATS_PREFIX: "sse:user_stats:",
   CONNECTION_TIMEOUT: 5 * 60 * 1000, // 5 minutes
 };
 
@@ -286,6 +288,81 @@ export const sseService = {
   async getUserConnections(userId: string): Promise<string[]> {
     const redisService = await getRedis();
     return await redisService.smembers(`${SSE_CONSTANTS.USER_PREFIX}${userId}`);
+  },
+
+  /**
+   * Get active connection count for a specific user.
+   */
+  async getUserActiveConnectionCount(userId: string): Promise<number> {
+    const redisService = await getRedis();
+    const userConnections = await redisService.smembers(
+      `${SSE_CONSTANTS.USER_PREFIX}${userId}`,
+    );
+
+    // Filter out connections that no longer have active controllers
+    const activeConnections = userConnections.filter((connectionId) =>
+      this.connectionControllers.has(connectionId),
+    );
+
+    return activeConnections.length;
+  },
+
+  /**
+   * Get user connection statistics.
+   */
+  async getUserStats(userId: string): Promise<SSEUserStats | null> {
+    const userConnections = await this.getUserConnections(userId);
+
+    if (userConnections.length === 0) {
+      return null;
+    }
+
+    // Get the most recent connection timestamp
+    let lastConnectionAt: Date | undefined;
+    for (const connectionId of userConnections) {
+      const connection = await this.getConnection(connectionId);
+      if (
+        connection &&
+        (!lastConnectionAt || connection.connectedAt > lastConnectionAt)
+      ) {
+        lastConnectionAt = connection.connectedAt;
+      }
+    }
+
+    const activeConnections = await this.getUserActiveConnectionCount(userId);
+
+    return {
+      userId,
+      activeConnections,
+      lastConnectionAt,
+    };
+  },
+
+  /**
+   * Get all users with active connections.
+   */
+  async getUsersWithActiveConnections(): Promise<SSEUserStats[]> {
+    const redisService = await getRedis();
+    const userStats: SSEUserStats[] = [];
+
+    // Scan for all user prefix keys
+    let cursor = "0";
+    do {
+      const result = await redisService.scan(cursor, {});
+      cursor = result.cursor;
+
+      for (const key of result.keys) {
+        if (key.startsWith(SSE_CONSTANTS.USER_PREFIX)) {
+          const userId = key.replace(SSE_CONSTANTS.USER_PREFIX, "");
+          const userStat = await this.getUserStats(userId);
+          if (userStat && userStat.activeConnections > 0) {
+            userStats.push(userStat);
+          }
+        }
+      }
+    } while (cursor !== "0");
+
+    return userStats;
   },
 
   /**

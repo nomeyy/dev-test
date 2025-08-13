@@ -26,3 +26,9 @@ export interface SSEStats {
   activeConnections: number;
   eventsSent: number;
 }
+
+export interface SSEUserStats {
+  userId: string;
+  activeConnections: number;
+  lastConnectionAt?: Date;
+}
