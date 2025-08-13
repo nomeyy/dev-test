@@ -40,31 +40,52 @@ export async function GET(request: NextRequest) {
 
     const addHeartbeat = (controller: ReadableStreamDefaultController) => {
       // Keep connection alive with heartbeat
-      return setInterval(() => {
-        const heartbeatEvent = `data: ${JSON.stringify({
-          type: "heartbeat",
-          data: { timestamp: new Date().toISOString() },
-        })}\n\n`;
+      const heartbeat = setInterval(() => {
+        try {
+          const heartbeatEvent = `data: ${JSON.stringify({
+            type: "heartbeat",
+            data: { timestamp: new Date().toISOString() },
+          })}\n\n`;
 
-        controller.enqueue(new TextEncoder().encode(heartbeatEvent));
+          controller.enqueue(new TextEncoder().encode(heartbeatEvent));
+
+          // Update last activity on heartbeat
+          void sseService.updateConnection(connection.id, {
+            lastActivity: new Date(),
+          });
+        } catch (error) {
+          console.error(
+            `Heartbeat error for connection ${connection.id}:`,
+            error,
+          );
+          // If heartbeat fails, disconnect the client
+          void sseService.forceDisconnect(connection.id);
+        }
       }, 30000); // 30 seconds
+
+      // Store heartbeat for proper cleanup
+      sseService.addConnectionHeartbeat(connection.id, heartbeat);
+
+      return heartbeat;
     };
 
     const stream = new ReadableStream({
       start(controller) {
         initMessage(controller);
-
-        const heartbeat = addHeartbeat(controller);
+        addHeartbeat(controller);
 
         sseService.addController(connection.id, controller);
 
         // Cleanup on close
         request.signal.addEventListener("abort", () => {
-          clearInterval(heartbeat);
+          console.log(`SSE connection ${connection.id} aborted by client`);
           void sseService.disconnect(connection.id);
-          sseService.removeController(connection.id);
           controller.close();
         });
+      },
+      cancel() {
+        console.log(`SSE connection ${connection.id} cancelled`);
+        void sseService.disconnect(connection.id);
       },
     });
 

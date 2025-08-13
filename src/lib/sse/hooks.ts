@@ -48,7 +48,25 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     reconnectInterval = 5000,
   } = options;
 
+  const onMessageRef = useRef(onMessage);
+  const onErrorRef = useRef(onError);
+  const onOpenRef = useRef(onOpen);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onErrorRef.current = onError;
+    onOpenRef.current = onOpen;
+  }, [onMessage, onError, onOpen]);
+
   const connect = useCallback(() => {
+    console.log(
+      userId,
+      onMessage,
+      onError,
+      onOpen,
+      autoReconnect,
+      reconnectInterval,
+    );
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
@@ -61,7 +79,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
 
     eventSource.onopen = () => {
       setIsConnected(true);
-      onOpen?.();
+      onOpenRef.current?.();
     };
 
     eventSource.onmessage = (event: MessageEvent<string>) => {
@@ -76,7 +94,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
 
           setConnectionId(val.connectionId as string);
         } else if (data.type !== "heartbeat") {
-          onMessage?.(data);
+          onMessageRef.current?.(data);
         }
       } catch (error) {
         console.error("Failed to parse Page message:", error);
@@ -85,7 +103,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
 
     eventSource.onerror = (error) => {
       setIsConnected(false);
-      onError?.(error);
+      onErrorRef.current?.(error);
 
       if (autoReconnect) {
         reconnectTimeoutRef.current = setTimeout(() => {
@@ -95,7 +113,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     };
 
     eventSourceRef.current = eventSource;
-  }, [userId, onMessage, onError, onOpen, autoReconnect, reconnectInterval]);
+  }, [userId, autoReconnect, reconnectInterval]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
