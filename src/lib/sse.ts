@@ -32,7 +32,7 @@ export function createEventStream(userId: string) {
   // Send a "connected" event
   safeWrite(
     writer,
-    `event: connected\ndata: ${JSON.stringify({ message: "connected" })}\n\n`
+    `event: connected\ndata: ${JSON.stringify({ message: "connected" })}\n\n`,
   );
 
   const stream = ts.readable;
@@ -62,7 +62,7 @@ function formatSSE(eventName: string, data: unknown) {
 export function sendEventToUser(
   userId: string,
   eventName: string,
-  payload: unknown
+  payload: unknown,
 ) {
   const set = clients.get(userId);
   if (!set) return { sent: 0 };
@@ -136,4 +136,24 @@ export function stopHeartbeat() {
     clearInterval(heartbeatInterval);
     heartbeatInterval = undefined;
   }
+}
+
+// Add this function to the SSE library
+export function disconnectUser(userId: string) {
+  const set = clients.get(userId);
+  if (!set) return { disconnected: 0 };
+
+  let disconnected = 0;
+  for (const writer of Array.from(set)) {
+    try {
+      writer.close();
+      disconnected++;
+    } catch (e) {
+      console.error("Failed to close writer", e);
+    }
+    set.delete(writer);
+  }
+
+  if (set.size === 0) clients.delete(userId);
+  return { disconnected };
 }

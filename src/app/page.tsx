@@ -74,10 +74,45 @@ export default function Home() {
 
     esRef.current = es2;
   };
+  const disConnectSSE = async () => {
+    if (!token) return alert("login first");
+
+    try {
+      // Close the current EventSource connection
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+
+      // Make POST request to disconnect endpoint
+      const response = await fetch("/api/sse/disconnect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setEvents((prev) => [
+          { type: "disconnected", data: JSON.stringify(result) },
+          ...prev,
+        ]);
+        alert("Disconnected successfully");
+      } else {
+        const error = await response.text();
+        alert(`Disconnect failed: ${error}`);
+      }
+    } catch (error) {
+      console.error("Disconnect error:", error);
+      alert("Disconnect failed");
+    }
+  };
 
   return (
     <main style={{ padding: 20 }}>
-      <h1>Next.js SSE demo</h1>
+      <h1>SSE demo</h1>
       <div style={{ marginBottom: 10 }}>
         <input
           placeholder="email"
@@ -119,6 +154,22 @@ export default function Home() {
         >
           Connect SSE
         </button>
+        {events.length > 0 && (
+          <button
+            onClick={disConnectSSE}
+            style={{
+              backgroundColor: "#4CAF50",
+              color: "red",
+              border: "none",
+              padding: "6px 12px",
+              marginLeft: 5,
+              cursor: "pointer",
+              borderRadius: 4,
+            }}
+          >
+            Disconnect
+          </button>
+        )}
       </div>
       <div>
         <h3>Events</h3>
