@@ -1,5 +1,9 @@
+import {
+  type SSEBroadcastOptions,
+  type SSEEvent,
+  sseService,
+} from "@/features/sse";
 import { userService } from "@/features/users";
-import { type SSEBroadcastOptions, type SSEEvent, sseService } from "@/lib/sse";
 import { type NextRequest, NextResponse } from "next/server";
 import z from "zod";
 

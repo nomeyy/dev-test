@@ -1,4 +1,4 @@
-import { sseService } from "@/lib/sse";
+import { sseService } from "@/features/sse";
 import { type NextRequest, NextResponse } from "next/server";
 import z from "zod";
 

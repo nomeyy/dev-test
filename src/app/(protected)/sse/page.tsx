@@ -1,7 +1,6 @@
 "use client";
 
-import type { SSEEvent } from "@/lib/sse";
-import { useSSE } from "@/lib/sse/hooks";
+import { type SSEEvent, useSSE } from "@/features/sse";
 import { useState } from "react";
 
 export default function SSEPage() {

@@ -1,5 +1,5 @@
 import { getSession } from "@/features/auth";
-import { sseService } from "@/lib/sse";
+import { sseService } from "@/features/sse";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {

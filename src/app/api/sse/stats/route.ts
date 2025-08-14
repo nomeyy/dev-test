@@ -1,4 +1,4 @@
-import { sseService } from "@/lib/sse";
+import { sseService } from "@/features/sse";
 import { NextResponse } from "next/server";
 
 export async function GET() {

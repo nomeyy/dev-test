@@ -1,4 +1,6 @@
-import type { SSEEvent } from "@/lib/sse/types";
+"use client";
+
+import type { SSEEvent } from "./types";
 import { createServiceContext } from "@/utils/service-utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 const { handleError } = createServiceContext("SSEHooks");
