@@ -5,7 +5,7 @@ export type RedisServiceType = {
     value: string | number,
   ): Promise<string | number | null>;
   deleteKey(key: string): Promise<number>;
-  hGet(key: string, field: string): Promise<string | null>;
+  hGet(key: string, field: string): Promise<string | object | null>;
   hSet(key: string, field: string, value: string | number): Promise<number>;
   hDel(key: string, field: string): Promise<number>;
   hGetAll(key: string): Promise<Record<string, string> | null>;

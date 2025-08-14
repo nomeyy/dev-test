@@ -58,7 +58,7 @@ export class RedisService implements RedisServiceType {
   // --------------------
 
   /** Get a field value in a hash. */
-  async hGet(key: string, field: string): Promise<string | null> {
+  async hGet(key: string, field: string): Promise<string | object | null> {
     return this.client.hget(key, field);
   }
 

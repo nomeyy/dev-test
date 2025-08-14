@@ -16,9 +16,16 @@ export interface RedisClient {
   // Upstash redis does not have a `subscribe` method,
   // so we don't include it in the interface.
   publish(channel: string, message: string): Promise<number>;
+  subscribe(channel: string): {
+    on(eventName: string, listener: unknown): void;
+  };
+
+  sadd(key: string, member: string): Promise<number>;
+  srem(key: string, member: string): Promise<number>;
+  smembers(key: string): Promise<string[]>;
 
   // Hashing methods
-  hget(key: string, field: string): Promise<string | null>;
+  hget(key: string, field: string): Promise<string | object | null>;
   hset(key: string, field: string, value: string | number): Promise<number>;
   hdel(key: string, field: string): Promise<number>;
   hgetall(key: string): Promise<Record<string, string> | null>;
