@@ -1,5 +1,5 @@
 import type { SSEEvent } from "@/lib/sse/types";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseSSEOptions {
   userId?: string;
@@ -9,11 +9,23 @@ interface UseSSEOptions {
   onClose?: () => void;
   autoReconnect?: boolean;
   reconnectInterval?: number;
+  broadcastOptions?: {
+    userIds?: string[];
+    excludeConnectionIds?: string[];
+    eventNames?: string[];
+  };
+  sendOptions?: {
+    userIds?: string[];
+    connectionIds?: string[];
+  };
 }
 
 interface UseSSEReturn {
   isConnected: boolean;
   connectionId?: string;
+  broadcastMessage: (
+    event: Omit<SSEEvent, "id" | "timestamp">,
+  ) => Promise<void>;
   sendMessage: (event: Omit<SSEEvent, "id" | "timestamp">) => Promise<void>;
   reconnect: () => void;
   disconnect: () => void;
@@ -46,6 +58,8 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     onClose,
     autoReconnect = true,
     reconnectInterval = 5000,
+    broadcastOptions,
+    sendOptions,
   } = options;
 
   const onMessageRef = useRef(onMessage);
@@ -127,21 +141,48 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     connect();
   }, [disconnect, connect]);
 
-  const sendMessage = useCallback(
+  const broadcastMessage = useCallback(
     async (event: Omit<SSEEvent, "id" | "timestamp">) => {
       try {
+        const body = {
+          event,
+          options: broadcastOptions ?? {},
+        };
+
         await fetch("/api/sse/broadcast", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(event),
+          body: JSON.stringify(body),
+        });
+      } catch (error) {
+        console.error("Failed to broadcast Page message:", error);
+      }
+    },
+    [broadcastOptions],
+  );
+
+  const sendMessage = useCallback(
+    async (event: Omit<SSEEvent, "id" | "timestamp">) => {
+      try {
+        const body = {
+          event,
+          options: sendOptions ?? {},
+        };
+
+        await fetch("/api/sse/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
         });
       } catch (error) {
         console.error("Failed to send Page message:", error);
       }
     },
-    [],
+    [sendOptions],
   );
 
   useEffect(() => {
@@ -155,6 +196,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
   return {
     isConnected,
     connectionId,
+    broadcastMessage,
     sendMessage,
     reconnect,
     disconnect,

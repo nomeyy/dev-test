@@ -8,7 +8,7 @@ export interface SSEConnection {
 export interface SSEEvent {
   id?: string;
   type: string;
-  name?: string; // Named event identifier
+  eventName?: string; // Named event identifier
   data: string | Record<string, unknown>;
   timestamp?: Date;
 }
@@ -20,7 +20,7 @@ export interface SSEConnectionOptions {
 export interface SSEBroadcastOptions {
   userIds?: string[];
   excludeConnectionIds?: string[];
-  eventName?: string; // Filter by event name
+  eventNames?: string[]; // Filter by event names
 }
 
 export interface SSEDirectMessageOptions {

@@ -517,7 +517,7 @@ export const sseService = {
     }
 
     // Filter by event name if specified
-    if (options.eventName) {
+    if (options.eventNames?.length) {
       const filteredConnections = new Set<string>();
 
       for (const connectionId of targetConnections) {
@@ -579,7 +579,7 @@ export const sseService = {
   ): Promise<void> {
     const event: SSEEvent = {
       type: "custom",
-      name: eventName,
+      eventName,
       data,
       timestamp: new Date(),
       id: this.generateEventId(),
@@ -623,13 +623,13 @@ export const sseService = {
   ): Promise<void> {
     const event: SSEEvent = {
       type: "custom",
-      name: eventName,
+      eventName,
       data,
       timestamp: new Date(),
       id: this.generateEventId(),
     };
 
-    await this.broadcast(event, { ...options, eventName });
+    await this.broadcast(event, { ...options, eventNames: [eventName] });
   },
 
   /**
@@ -642,7 +642,7 @@ export const sseService = {
   ): Promise<void> {
     const event: SSEEvent = {
       type: "custom",
-      name: eventName,
+      eventName,
       data,
       timestamp: new Date(),
       id: this.generateEventId(),
@@ -655,7 +655,10 @@ export const sseService = {
    * Determines if a connection should receive an event based on filters.
    */
   shouldReceiveEvent(event: SSEEvent, options: SSEBroadcastOptions): boolean {
-    return !(options.eventName && event.name !== options.eventName);
+    if (!options.eventNames?.length) {
+      return true;
+    }
+    return options.eventNames.includes(event.eventName ?? "");
   },
 
   // --------------------

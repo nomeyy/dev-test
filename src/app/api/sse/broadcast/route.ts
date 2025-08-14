@@ -3,31 +3,35 @@ import { type SSEBroadcastOptions, type SSEEvent, sseService } from "@/lib/sse";
 import { type NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
-const broadcastSchema = z.object({
+const broadcastEventSchema = z.object({
   type: z.string(),
-  name: z.string().optional(), // Named event identifier
+  eventName: z.string().optional(),
   data: z.any(),
+});
+
+const broadcastOptionsSchema = z.object({
   userIds: z.array(z.string()).optional(),
   excludeConnectionIds: z.array(z.string()).optional(),
-  eventName: z.string().optional(), // Filter by event name
+  eventNames: z.array(z.string()).optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as unknown;
+    const body = (await request.json()) as { event: unknown; options: unknown };
     const usersIds = await userService.getAllUsersIds();
-    const validatedData = broadcastSchema.parse(body);
+    const validatedEventData = broadcastEventSchema.parse(body.event);
+    const validatedOptionsData = broadcastOptionsSchema.parse(body.options);
 
     const event: SSEEvent = {
-      type: validatedData.type,
-      name: validatedData.name,
-      data: validatedData.data as Record<string, unknown>,
+      type: validatedEventData.type,
+      data: validatedEventData.data as Record<string, unknown>,
+      eventName: validatedEventData.eventName,
     };
 
     const options: SSEBroadcastOptions = {
-      userIds: validatedData.userIds ?? usersIds,
-      excludeConnectionIds: validatedData.excludeConnectionIds,
-      eventName: validatedData.eventName,
+      userIds: validatedOptionsData.userIds ?? usersIds,
+      excludeConnectionIds: validatedOptionsData.excludeConnectionIds,
+      eventNames: validatedOptionsData.eventNames,
     };
 
     await sseService.broadcast(event, options);
