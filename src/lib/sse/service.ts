@@ -7,6 +7,7 @@ import type {
   SSEBroadcastOptions,
   SSEStats,
   SSEUserStats,
+  SSEDirectMessageOptions,
 } from "./types";
 
 /**
@@ -15,6 +16,7 @@ import type {
  * This service provides a scalable Page implementation using Redis for:
  * - Connection management across multiple server instances
  * - Event broadcasting with filtering and targeting
+ * - Named events with payloads to specific clients
  * - Connection statistics and monitoring
  *
  * @example
@@ -25,10 +27,19 @@ import type {
  *   userId: 'user123',
  * });
  *
- * // Broadcast an event
+ * // Send a named event to specific clients
+ * await sseService.sendNamedEvent('notification', {
+ *   message: 'Hello world!',
+ *   priority: 'high'
+ * }, {
+ *   connectionIds: ['conn_123', 'conn_456']
+ * });
+ *
+ * // Broadcast an event to all users
  * await sseService.broadcast({
  *   type: 'notification',
- *   data: { message: 'Hello world!' }
+ *   name: 'system_alert',
+ *   data: { message: 'System maintenance in 5 minutes' }
  * });
  * ```
  */
@@ -38,6 +49,7 @@ export const SSE_CONSTANTS = {
   STATS_KEY: "sse:stats",
   USER_STATS_PREFIX: "sse:user_stats:",
   CONNECTION_TIMEOUT: 5 * 60 * 1000, // 5 minutes
+  EVENT_TYPES_KEY: "sse:event_types:",
 };
 
 export const sseService = {
@@ -478,19 +490,13 @@ export const sseService = {
   // --------------------
 
   /**
-   * Broadcasts an event to all matching connections.
+   * Resolves the set of target connection IDs for broadcasting.
    */
-  async broadcast(
-    event: SSEEvent,
-    options: SSEBroadcastOptions = {},
-  ): Promise<void> {
+  async getTargetConnections(
+    eventWithTimestamp: SSEEvent,
+    options: SSEBroadcastOptions,
+  ): Promise<Set<string>> {
     const redisService = await getRedis();
-    const eventWithTimestamp = {
-      ...event,
-      timestamp: new Date(),
-      id: this.generateEventId(),
-    };
-
     const targetConnections = new Set<string>();
 
     // Get connections by user IDs
@@ -510,13 +516,50 @@ export const sseService = {
       );
     }
 
+    // Filter by event name if specified
+    if (options.eventName) {
+      const filteredConnections = new Set<string>();
+
+      for (const connectionId of targetConnections) {
+        if (this.shouldReceiveEvent(eventWithTimestamp, options)) {
+          filteredConnections.add(connectionId);
+        }
+      }
+      return filteredConnections;
+    }
+
+    return targetConnections;
+  },
+
+  /**
+   * Broadcasts an event to all matching connections.
+   */
+  async broadcast(
+    event: SSEEvent,
+    options: SSEBroadcastOptions = {},
+  ): Promise<void> {
+    const eventWithTimestamp = {
+      ...event,
+      timestamp: new Date(),
+      id: this.generateEventId(),
+    };
+
+    const targetConnections = await this.getTargetConnections(
+      eventWithTimestamp,
+      options,
+    );
+
     // Send event to all target connections
     for (const connectionId of targetConnections) {
       await this.sendEventToConnection(connectionId, eventWithTimestamp);
     }
 
     // Update stats
-    await this.updateStats("event_sent", targetConnections.size);
+    await this.updateStats(
+      "event_sent",
+      targetConnections.size,
+      eventWithTimestamp.type,
+    );
   },
 
   /**
@@ -524,6 +567,95 @@ export const sseService = {
    */
   async broadcastToUser(userId: string, event: SSEEvent): Promise<void> {
     await this.broadcast(event, { userIds: [userId] });
+  },
+
+  /**
+   * Sends a named event to specific connection IDs.
+   */
+  async sendNamedEvent(
+    eventName: string,
+    data: Record<string, unknown>,
+    options: SSEDirectMessageOptions,
+  ): Promise<void> {
+    const event: SSEEvent = {
+      type: "custom",
+      name: eventName,
+      data,
+      timestamp: new Date(),
+      id: this.generateEventId(),
+    };
+
+    await this.sendToConnections(event, options.connectionIds);
+  },
+
+  /**
+   * Sends an event to specific connection IDs.
+   */
+  async sendToConnections(
+    event: SSEEvent,
+    connectionIds: string[],
+  ): Promise<void> {
+    const eventWithTimestamp = {
+      ...event,
+      timestamp: new Date(),
+      id: this.generateEventId(),
+    };
+
+    for (const connectionId of connectionIds) {
+      await this.sendEventToConnection(connectionId, eventWithTimestamp);
+    }
+
+    // Update stats
+    await this.updateStats(
+      "event_sent",
+      connectionIds.length,
+      eventWithTimestamp.type,
+    );
+  },
+
+  /**
+   * Broadcasts a named event to all users.
+   */
+  async broadcastNamedEvent(
+    eventName: string,
+    data: Record<string, unknown>,
+    options: Omit<SSEBroadcastOptions, "eventName"> = {},
+  ): Promise<void> {
+    const event: SSEEvent = {
+      type: "custom",
+      name: eventName,
+      data,
+      timestamp: new Date(),
+      id: this.generateEventId(),
+    };
+
+    await this.broadcast(event, { ...options, eventName });
+  },
+
+  /**
+   * Sends a named event to specific users.
+   */
+  async sendNamedEventToUsers(
+    eventName: string,
+    data: Record<string, unknown>,
+    userIds: string[],
+  ): Promise<void> {
+    const event: SSEEvent = {
+      type: "custom",
+      name: eventName,
+      data,
+      timestamp: new Date(),
+      id: this.generateEventId(),
+    };
+
+    await this.broadcast(event, { userIds });
+  },
+
+  /**
+   * Determines if a connection should receive an event based on filters.
+   */
+  shouldReceiveEvent(event: SSEEvent, options: SSEBroadcastOptions): boolean {
+    return !(options.eventName && event.name !== options.eventName);
   },
 
   // --------------------
@@ -542,14 +674,26 @@ export const sseService = {
         totalConnections: 0,
         activeConnections: 0,
         eventsSent: 0,
+        eventsByType: {},
       };
     }
 
-    return {
+    const stats: SSEStats = {
       totalConnections: parseInt(statsData.totalConnections ?? "0"),
       activeConnections: parseInt(statsData.activeConnections ?? "0"),
       eventsSent: parseInt(statsData.eventsSent ?? "0"),
+      eventsByType: {},
     };
+
+    // Parse eventByType data
+    for (const key in statsData) {
+      if (key.startsWith("eventsByType:")) {
+        const eventType = key.replace("eventsByType:", "");
+        stats.eventsByType[eventType] = parseInt(statsData[key] ?? "0");
+      }
+    }
+
+    return stats;
   },
 
   generateConnectionId(): string {
@@ -580,6 +724,7 @@ export const sseService = {
   async updateStats(
     action: "connect" | "disconnect" | "event_sent",
     count = 1,
+    eventType?: string,
   ): Promise<void> {
     const redisService = await getRedis();
     const stats = await this.getStats();
@@ -591,6 +736,12 @@ export const sseService = {
       stats.activeConnections = Math.max(0, stats.activeConnections - count);
     } else if (action === "event_sent") {
       stats.eventsSent += count;
+
+      // Track events by type
+      if (eventType) {
+        stats.eventsByType[eventType] =
+          (stats.eventsByType[eventType] ?? 0) + count;
+      }
     }
 
     await redisService.hset(
@@ -608,5 +759,17 @@ export const sseService = {
       "eventsSent",
       stats.eventsSent,
     );
+
+    // Update event type stats
+    if (eventType && action === "event_sent") {
+      const eventCount = stats.eventsByType[eventType];
+      if (eventCount !== undefined) {
+        await redisService.hset(
+          SSE_CONSTANTS.STATS_KEY,
+          `eventsByType:${eventType}`,
+          eventCount,
+        );
+      }
+    }
   },
 };

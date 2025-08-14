@@ -59,14 +59,6 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
   }, [onMessage, onError, onOpen]);
 
   const connect = useCallback(() => {
-    console.log(
-      userId,
-      onMessage,
-      onError,
-      onOpen,
-      autoReconnect,
-      reconnectInterval,
-    );
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
