@@ -1,5 +1,7 @@
 import type { SSEEvent } from "@/lib/sse/types";
+import { createServiceContext } from "@/utils/service-utils";
 import { useCallback, useEffect, useRef, useState } from "react";
+const { handleError } = createServiceContext("SSEHooks");
 
 interface UseSSEOptions {
   userId?: string;
@@ -103,7 +105,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
           onMessageRef.current?.(data);
         }
       } catch (error) {
-        console.error("Failed to parse Page message:", error);
+        handleError("Failed to parse Page message:", error);
       }
     };
 
@@ -157,7 +159,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
           body: JSON.stringify(body),
         });
       } catch (error) {
-        console.error("Failed to broadcast Page message:", error);
+        handleError("Failed to broadcast Page message:", error);
       }
     },
     [broadcastOptions],
@@ -179,7 +181,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
           body: JSON.stringify(body),
         });
       } catch (error) {
-        console.error("Failed to send Page message:", error);
+        handleError("Failed to send Page message:", error);
       }
     },
     [sendOptions],

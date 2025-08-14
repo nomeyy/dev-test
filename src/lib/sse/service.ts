@@ -1,5 +1,7 @@
 import { getRedis } from "@/lib/redis";
 import type { RedisClient } from "@/lib/redis/types";
+import { createServiceContext } from "@/utils/service-utils";
+const { log, handleError } = createServiceContext("SSEService");
 import type {
   SSEConnection,
   SSEEvent,
@@ -113,11 +115,6 @@ export const sseService = {
   async initializeSubscriber(redisService: RedisClient, connectionId: string) {
     const channel = `${SSE_CONSTANTS.CONNECTION_PREFIX}${connectionId}`;
 
-    if (!connectionId) {
-      console.error("connectionId is null");
-      return;
-    }
-
     // Store the Redis client for proper cleanup
     this.addSubscription(connectionId, redisService);
 
@@ -134,7 +131,7 @@ export const sseService = {
             lastActivity: new Date(),
           });
         } catch (error) {
-          console.error(
+          handleError(
             `Error sending message to connection ${connectionId}:`,
             error,
           );
@@ -144,7 +141,7 @@ export const sseService = {
       }
     });
     subscription.on("error", (error: unknown) => {
-      console.error(
+      handleError(
         `Redis subscription error for connection ${connectionId}:`,
         error,
       );
@@ -187,7 +184,7 @@ export const sseService = {
 
       // Set connection timeout for cleanup
       const timeout = setTimeout(() => {
-        console.warn(`Connection ${connectionId} timed out, cleaning up`);
+        log.warn(`Connection ${connectionId} timed out, cleaning up`);
         void this.forceDisconnect(connectionId);
       }, SSE_CONSTANTS.CONNECTION_TIMEOUT);
 
@@ -211,10 +208,7 @@ export const sseService = {
     try {
       await this.cleanupConnection(connectionId);
     } catch (error) {
-      console.error(
-        `Error during normal disconnect for ${connectionId}:`,
-        error,
-      );
+      handleError(`Error during normal disconnect for ${connectionId}:`, error);
       // Force cleanup even if normal cleanup fails
       await this.forceDisconnect(connectionId);
     }
@@ -227,10 +221,7 @@ export const sseService = {
     try {
       await this.cleanupConnection(connectionId);
     } catch (error) {
-      console.error(
-        `Error during force disconnect for ${connectionId}:`,
-        error,
-      );
+      handleError(`Error during force disconnect for ${connectionId}:`, error);
       // At minimum, clean up local resources
       this.cleanupLocalResources(connectionId);
     }
@@ -273,7 +264,7 @@ export const sseService = {
       // Update stats
       await this.updateStats("disconnect");
     } catch (error) {
-      console.error(
+      handleError(
         `Error cleaning up Redis data for connection ${connectionId}:`,
         error,
       );
@@ -409,7 +400,7 @@ export const sseService = {
    */
   async performPeriodicCleanup(): Promise<void> {
     try {
-      console.log("Starting periodic SSE cleanup...");
+      log.info("Starting periodic SSE cleanup...");
 
       // Clean up connections that have no active controller
       const activeConnections = Array.from(this.connectionControllers.keys());
@@ -418,7 +409,7 @@ export const sseService = {
       // Find orphaned Redis connections (exist in Redis but no local controller)
       for (const connectionId of redisConnections) {
         if (!activeConnections.includes(connectionId)) {
-          console.log(`Cleaning up orphaned connection ${connectionId}`);
+          log.info(`Cleaning up orphaned connection ${connectionId}`);
           await this.forceDisconnect(connectionId);
         }
       }
@@ -427,16 +418,16 @@ export const sseService = {
       for (const connectionId of activeConnections) {
         const connection = await this.getConnection(connectionId);
         if (!connection) {
-          console.log(
+          log.info(
             `Cleaning up local resources for non-existent connection ${connectionId}`,
           );
           this.cleanupLocalResources(connectionId);
         }
       }
 
-      console.log("Periodic SSE cleanup completed");
+      log.info("Periodic SSE cleanup completed");
     } catch (error) {
-      console.error("Error during periodic SSE cleanup:", error);
+      handleError("Error during periodic SSE cleanup:", error);
     }
   },
 
