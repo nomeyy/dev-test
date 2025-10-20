@@ -1,4 +1,5 @@
 import { Button } from "@/shared/components/ui/button";
+import ServerMessage from "./ServerMessage";
 
 const WelcomeMessage = ({
   name,
@@ -15,6 +16,7 @@ const WelcomeMessage = ({
       <div className="flex flex-col items-center gap-2">
         <Button onClick={signOut}>{"Sign out"}</Button>
       </div>
+      <ServerMessage />
     </>
   );
 };
