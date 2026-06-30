@@ -55,6 +55,13 @@ export const env = createEnv({
     TOLGEE_API_KEY: z.string().optional(),
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+    // SSE environment variables
+    SSE_CONNECTION_TIMEOUT: z.number().default(300000), // 5 minutes
+    SSE_MAX_CONNECTIONS_PER_USER: z.number().default(5),
+    SSE_MAX_TOTAL_CONNECTIONS: z.number().default(1000),
+    SSE_HEARTBEAT_INTERVAL: z.number().default(30000), // 30 seconds
+    SSE_RETRY_INTERVAL: z.number().default(3000), // 3 seconds
   },
 
   /**
@@ -90,6 +97,23 @@ export const env = createEnv({
     TOLGEE_API_KEY: process.env.TOLGEE_API_KEY,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+
+    // SSE environment variables
+    SSE_CONNECTION_TIMEOUT: process.env.SSE_CONNECTION_TIMEOUT
+      ? parseInt(process.env.SSE_CONNECTION_TIMEOUT, 10)
+      : 300000,
+    SSE_MAX_CONNECTIONS_PER_USER: process.env.SSE_MAX_CONNECTIONS_PER_USER
+      ? parseInt(process.env.SSE_MAX_CONNECTIONS_PER_USER, 10)
+      : 5,
+    SSE_MAX_TOTAL_CONNECTIONS: process.env.SSE_MAX_TOTAL_CONNECTIONS
+      ? parseInt(process.env.SSE_MAX_TOTAL_CONNECTIONS, 10)
+      : 1000,
+    SSE_HEARTBEAT_INTERVAL: process.env.SSE_HEARTBEAT_INTERVAL
+      ? parseInt(process.env.SSE_HEARTBEAT_INTERVAL, 10)
+      : 30000,
+    SSE_RETRY_INTERVAL: process.env.SSE_RETRY_INTERVAL
+      ? parseInt(process.env.SSE_RETRY_INTERVAL, 10)
+      : 3000,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
