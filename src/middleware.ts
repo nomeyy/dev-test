@@ -27,7 +27,8 @@ export async function middleware(
 }
 
 export const config = {
-  // Specify which routes the middleware applies to
-  // Exclude health checks, static files, and favicon
-  matcher: ["/((?!api/health|_next/static|_next/image|favicon.ico).*)"],
+  // Exclude sw.js and static assets so the SW is fetched with no redirects
+  matcher: [
+    "/((?!api/health|_next/static|_next/image|favicon.ico|sw.js|socket.io).*)",
+  ],
 };

@@ -1,4 +1,5 @@
 # Nomey Web App
+
 This is the official repository for the Nomey web app, built on the T3 Stack with custom extensions.
 
 ## Tech Stack
@@ -12,8 +13,22 @@ This is the official repository for the Nomey web app, built on the T3 Stack wit
 - [tolgee](https://tolgee.io/) - Translation Management
 - [Meilisearch](https://www.meilisearch.com/) - Full-text search
 - [Upstash](https://upstash.com/) Next compatible redis
-- [Qstash](https://upstash.com/docs/qstash) Next compatible queue handling 
+- [Qstash](https://upstash.com/docs/qstash) Next compatible queue handling
 - [Vitest](https://vitest.dev/) - Testing Framework
+
+## 🚀 SSE Implementation Demo
+
+Watch the Server-Sent Events (SSE) implementation in action:
+
+[https://github.com/nomeyy/nomey-next/assets/public/localhost_3000_home_real-time.webm](https://res.cloudinary.com/dqb3ctnmc/video/upload/v1755062726/localhost_3000_home_real-time_cwqzdp.webm)
+
+This video demonstrates:
+
+- Real-time SSE connections
+- Live message broadcasting
+- Client connection management
+- User presence tracking
+- Real-time notifications
 
 ## Testing
 
@@ -42,6 +57,7 @@ npm run test
 ## Local Development
 
 ### Clone and Install
+
 ```bash
 git clone git@github.com:nomeyy/nomey-next.git
 cd nomey-next
@@ -62,7 +78,7 @@ npm run dev
 
 ## Learn More
 
- - [Nomey Documentation (WIP)](https://nomey.mintlify.app/)
- - [Next Documentation](https://nextjs.org/docs)
- - [T3 Stack Documentation](https://create.t3.gg/en/usage/first-steps)
- - [Mux Documentation](https://www.mux.com/docs)
+- [Nomey Documentation (WIP)](https://nomey.mintlify.app/)
+- [Next Documentation](https://nextjs.org/docs)
+- [T3 Stack Documentation](https://create.t3.gg/en/usage/first-steps)
+- [Mux Documentation](https://www.mux.com/docs)
